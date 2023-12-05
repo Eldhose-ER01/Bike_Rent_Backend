@@ -1,69 +1,109 @@
-const jwt=require('jsonwebtoken')
-const userAuth=async(req,res,next)=>{
-    try {
-        // console.log();
-        const tokenwithBearear=req.headers['authorization'];
-        if(!tokenwithBearear||!tokenwithBearear.startswith('Bearer ')){
-            return res.status(401).json({message:'Authorization header missing or invalid',success:false})
-        }
-        const token=tokenwithBearear.split(' ')[1];
-        jwt.verify(token,process.env.JWT_SECRET_KEY,(err,encoded)=>{
-            if(err){
-                return res.status(401).json({message:'Auth faild',success:false})
-            }else if(encoded.role=='user'){
-                req.id=encoded.id;
-                next();
-            }
-        })
-    } catch (error) {
-        console.log(error.message);
-        res.status(500).json({ message: 'Internal Server Error', success: false });
+const partner = require("../model/Partner_Model");
+const jwt = require("jsonwebtoken");
+
+const userAuth = async (req, res, next) => {
+  try {
+    const tokenWithBearer = req.headers["authorization"];
+    if (!tokenWithBearer || !tokenWithBearer.startsWith("Bearer ")) {
+      console.error("Authorization header missing or invalid");
+      return res
+        .status(401)
+        .json({
+          message: "Authorization header missing or invalid",
+          success: false,
+        });
     }
-}
-const adminAuth=async(req,res,next)=>{
-    try {
-        // console.log();
-        const tokenwithBearear=req.headers['authorization'];
-        if(!tokenwithBearear||!tokenwithBearear.startswith('Bearer ')){
-            return res.status(401).json({message:'Authorization header missing or invalid',success:false})
-        }
-        const token=tokenwithBearear.split(' ')[1];
-        jwt.verify(token,process.env.JWT_SECRET_KEY,(err,encoded)=>{
-            if(err){
-                return res.status(401).json({message:'Auth faild',success:false})
-            }else if(encoded.role=='admin'){
-                req.id=encoded.id;
-                next();
-            }
-        })
-    } catch (error) {
-        console.log(error.message);
-        res.status(500).json({ message: 'Internal Server Error', success: false });
+
+    const token = tokenWithBearer.split(" ")[1];
+    // const tokenString = String(token);
+
+    const cleanedToken = token.replace(/"/g, "");
+    jwt.verify(cleanedToken, process.env.JWT_SECRET_KEY, (err, decoded) => {
+      if (err) {
+      } else if (decoded.role === "user") {
+        req.id = decoded.id;
+
+        next();
+      }
+    });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
+
+const adminAuth = async (req, res, next) => {
+  try {
+    const tokenWithBearer = req.headers["authorization"];
+    if (!tokenWithBearer || !tokenWithBearer.startsWith("Bearer ")) {
+      console.error("Authorization header missing or invalid");
+      return res
+        .status(401)
+        .json({
+          message: "Authorization header missing or invalid",
+          success: false,
+        });
     }
-}
-const partnerAuth=async(req,res,next)=>{
-    try {
-        // console.log();
-        const tokenwithBearear=req.headers['authorization'];
-        if(!tokenwithBearear||!tokenwithBearear.startswith('Bearer ')){
-            return res.status(401).json({message:'Authorization header missing or invalid',success:false})
-        }
-        const token=tokenwithBearear.split(' ')[1];
-        jwt.verify(token,process.env.JWT_SECRET_KEY,(err,encoded)=>{
-            if(err){
-                return res.status(401).json({message:'Auth faild',success:false})
-            }else if(encoded.role=='partner'){
-                req.id=encoded.id;
-                next();
-            }
-        })
-    } catch (error) {
-        console.log(error.message);
-        res.status(500).json({ message: 'Internal Server Error', success: false });
+
+    const token = tokenWithBearer.split(" ")[1];
+    // const tokenString = String(token);
+
+    const cleanedToken = token.replace(/"/g, "");
+    jwt.verify(cleanedToken, process.env.JWT_SECRET_KEY, (err, decoded) => {
+      if (err) {
+      } else if (decoded.role === "admin") {
+        req.id = decoded.id;
+
+        next();
+      }
+    });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
+
+const partnerAuth = async (req, res, next) => {
+  try {
+    const tokenWithBearer = req.headers["authorization"];
+    if (!tokenWithBearer || !tokenWithBearer.startsWith("Bearer ")) {
+      return res
+        .status(401)
+        .json({
+          message: "Authorization header missing or invalid",
+          success: false,
+        });
     }
-}
-module.exports={
-    userAuth,
-    adminAuth,
-    partnerAuth
-}
+
+    const token = tokenWithBearer.split(" ")[1];
+
+    const cleanedToken = token.replace(/"/g, "");
+    jwt.verify(cleanedToken, process.env.JWT_SECRET_KEY, (err, decoded) => {
+      if (err) {
+      } else if (decoded.role === "partner") {
+        req.id = decoded.id;
+
+        next();
+      }
+    });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
+const partnerblock = async (req, res, next) => {
+  const partnerdata = await partner.findById(req.id);
+  if (partnerdata.status == true) {
+    next();
+  } else {
+    res.status(200).json({ success: false, message: "partner is blocked" });
+  }
+};
+
+module.exports = {
+  userAuth,
+  adminAuth,
+  partnerAuth,
+  partnerblock,
+  // checkuser
+};

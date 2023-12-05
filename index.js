@@ -1,17 +1,19 @@
 const mongoose = require('mongoose');
 const express=require('express')
 const app=express()
-const userRoute = require('./routes/UserRouts')
-const adminRoute=require('./routes/AdminRoutes')
-const partnerRoute=require('./routes/PartnerRoutes')
+const userRoute = require('./routes/User_Routs')
+const adminRoute=require('./routes/Admin_Routes')
+const partnerRoute=require('./routes/Partner_Routes')
 const cors=require('cors')
+const path = require('path')
 
 
 app.use(cors())
 require('dotenv').config()
 app.use(express.json())
 app.use(express.urlencoded())
-
+app.use(express.static('public'));
+app.set('views', path.join(__dirname, '/views'));
 app.use('/',userRoute)
 app.use('/admin',adminRoute)
 app.use('/partner',partnerRoute)

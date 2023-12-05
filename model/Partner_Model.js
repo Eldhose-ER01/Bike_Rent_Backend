@@ -30,6 +30,7 @@ const PartnerSchema=new mongoose.Schema({
     },
     image:{
         type:String
+        
     },
     password:{
         type:String,
@@ -44,9 +45,15 @@ const PartnerSchema=new mongoose.Schema({
     aadhaar:{
         type:String,
     },
-    pin:{
+    state:{
         type:String,
     },
+    sublocation:{
+       type:String
+    },
+    district:{
+        type:String,
+    }
 
 
 })

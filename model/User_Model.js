@@ -42,6 +42,16 @@ const userSchema=new mongoose.Schema({
             amount:{type:Number},
             tType:{type:String}
         }]
-    }
+    },
+    state:{
+       type:String
+    },
+    district:{
+        type:String
+    },
+    lincenno:{
+        type:String
+
+    } 
 })
 module.exports=mongoose.model("user",userSchema)

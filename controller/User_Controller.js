@@ -1,9 +1,9 @@
-const User = require("../model/Usermodel");
+const User = require("../model/User_Model");
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const otpGenerator = require("otp-generator");
 const jwt = require("jsonwebtoken");
-const { response } = require("../routes/UserRouts");
+const bike = require("../model/Bikeadd_Model");
 
 let globalotp = null;
 //Set up OTP creation,
@@ -64,9 +64,8 @@ const Usersignup = async (req, res) => {
 };
 
 //User Click the resend otp
-const resendotp = async (req, res) => {
+const ResendOtp = async (req, res) => {
   try {
-    console.log("sdfudsfdsufjdfj");
     const { email } = req.body.data.userdetails;
 
     const userexist = await User.findOne({ email: email });
@@ -78,7 +77,7 @@ const resendotp = async (req, res) => {
 };
 
 //OTP Submit
-const otpsubmit = async (req, res) => {
+const OtpSubmit = async (req, res) => {
   try {
     const data = req.body;
     const obj = req.body.data.otp;
@@ -103,6 +102,8 @@ const otpsubmit = async (req, res) => {
         email,
         phone,
         password: hashpassword,
+        image:
+          "https://i.pinimg.com/564x/e8/7a/b0/e87ab0a15b2b65662020e614f7e05ef1.jpg",
       });
       const savedata = await userdata.save();
       if (savedata) {
@@ -117,7 +118,7 @@ const otpsubmit = async (req, res) => {
 };
 
 //User Login IN client side
-const login = async (req, res) => {
+const Login = async (req, res) => {
   try {
     console.log(req.body.data);
     const user = req.body.data;
@@ -127,18 +128,23 @@ const login = async (req, res) => {
     if (!userdata) {
       return res
         .status(200)
-        .send({ incorrectemail: "Email is does Exist", success: false });
+        .send({ incorrectemail: "Email does not exist", success: false });
     }
-    if (userdata.status == false) {
-      res.status(201).send({ Block: "This Account is Block", success: false });
+
+    if (userdata.status === false) {
+      return res
+        .status(201)
+        .send({ Block: "This Account is Blocked", success: false });
     }
+
     const passwordMatch = bcrypt.compareSync(user.password, userdata.password);
+
     if (!passwordMatch) {
       return res
         .status(201)
         .json({ incorrectPassword: "Password is incorrect", success: false });
     } else {
-      const KEY = process.env.JWT_SECRET_KEY;
+      // const KEY = process.env.JWT_SECRET_KEY;
       const token = jwt.sign(
         { id: userdata._id, role: "user" },
         process.env.JWT_SECRET_KEY,
@@ -150,21 +156,22 @@ const login = async (req, res) => {
         id: userdata._id,
       };
 
-      res
+      return res
         .status(200)
-        .json({ success: true, message: "sucessfull login", userdatas: data });
+        .json({ success: true, message: "Successful login", userdatas: data });
     }
   } catch (error) {
-    return res.status(401).send({
-      message: "auth faild",
-      sucess: false,
-      error,
+    console.log(error.message);
+    return res.status(500).json({
+      message: "Internal server error",
+      success: false,
+      error: error.message,
     });
   }
 };
 
 //User Signup in Google
-const googledata = async (req, res) => {
+const GoogleData = async (req, res) => {
   try {
     const { firstName, lastName, email, photoUrl } =
       req.body.data._tokenResponse;
@@ -208,7 +215,9 @@ const googledata = async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 };
-const forgetPasswordOtp = async (req, res) => {
+// ForgetPasswordOtp
+
+const ForgetPasswordOtp = async (req, res) => {
   try {
     const email = req.body.data;
     const userdata = await User.findOne({ email: email });
@@ -228,7 +237,9 @@ const forgetPasswordOtp = async (req, res) => {
     });
   }
 };
-const forgetveryfyotp = async (req, res) => {
+// ForgetVeryfyotp
+
+const ForgetVeryfyotp = async (req, res) => {
   try {
     const obj = req.body.data.otp;
     const a = [];
@@ -255,7 +266,9 @@ const forgetveryfyotp = async (req, res) => {
     });
   }
 };
-const Resetpassword = async (req, res) => {
+// ResetPassword
+
+const ResetPassword = async (req, res) => {
   try {
     const { resetpassword, password, email } = req.body.data;
 
@@ -297,38 +310,182 @@ const Resetpassword = async (req, res) => {
     });
   }
 };
+// CheckifUser
 
-
-const CheckifUser=async(req,res)=>{
+const CheckifUser = async (req, res) => {
   try {
-    const tokenwithBearear=req.headers['authorization'];
-        if(!tokenwithBearear||!tokenwithBearear.startswith('Bearer ')){
-            return res.status(401).json({message:'Authorization header missing or invalid',success:false})
-        }
-        const token=tokenwithBearear.split(' ')[1];
-        jwt.verify(token,process.env.JWT_SECRET_KEY,(err,encoded)=>{
-            if(err){
-                return res.status(401).json({message:'Auth faild',success:false})
-            }else if(encoded.role=='user'){
-                req.id=encoded.id;
-                next();
-            }
-        })
-  } catch (error) {
-    res.status(500).json({ message: 'Internal Server Error', success: false });
+    const tokenWithBearer = req.headers["authorization"];
+    if (!tokenWithBearer || !tokenWithBearer.startsWith("Bearer ")) {
+      return res.status(401).json({
+        message: "Authorization header missing or invalid",
+        success: false,
+      });
     }
-  }
-  
+    const token = tokenWithBearer.split(" ")[1];
+    jwt.verify(token, process.env.JWT_SECRET_KEY, async (err, decoded) => {
+      if (err) {
+        return res.status(401).json({ message: "Auth failed", success: false });
+      } else if (decoded.role === "user") {
+        try {
+          const userdatas = await User.findOne({ _id: decoded.id });
 
+          const data = {
+            name: `${userdatas.fname} ${userdatas.lname}`,
+            token: token,
+            id: userdatas._id,
+          };
+          res.status(200).json({
+            success: true,
+            message: "This is working",
+            userdatas: data,
+          });
+        } catch (error) {
+          console.log(error.message);
+          res
+            .status(500)
+            .send({ message: "Something went wrong", success: false });
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
+// UserProfile
+
+const UserProfile = async (req, res) => {
+  try {
+    const userdetails = await User.findById(req.id);
+
+    res
+      .status(200)
+      .json({ success: true, message: "details find", user: userdetails });
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
+// GetProfile
+const GetProfile = async (req, res) => {
+  try {
+    const { fname, lname, email, phone, image, state, district, lincenno } =
+      req.body.data;
+    const userdata = await User.findOneAndUpdate(
+      { email: email },
+      {
+        $set: {
+          fname: fname,
+          lname: lname,
+          email: email,
+          phone: phone,
+          state: state,
+          image: image,
+          district: district,
+          lincenno: lincenno,
+        },
+      },
+      { new: true }
+    );
+
+    if (userdata) {
+      res.json({
+        message: "Profile updated successfully",
+        success: true,
+        user: userdata,
+      });
+    } else {
+      res.status(404).json({ message: "User not found", success: false });
+    }
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
+// ImageUpload
+const ImageUpload = async (req, res) => {
+  try {
+    const image = req.body.id;
+    await User.findByIdAndUpdate(req.id, { $set: { image: image } })
+      .then((res) => {
+        res
+          .status(200)
+          .json({ message: "Image upload successful", success: true });
+      })
+      .catch((err) => {
+        console.log(err.message);
+        res
+          .status(200)
+          .json({ message: "Image upload successful", success: true });
+      });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
+// ProofFrontid the licence
+const ProofFrontid = async (req, res) => {
+  try {
+    const frontidimage = req.body.id;
+    const data = await User.findByIdAndUpdate(req.id, {
+      $set: { licenseFrontSide: frontidimage },
+    });
+    if (data) {
+      res
+        .status(200)
+        .json({ message: "Image upload successful", success: true, data });
+    }
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
+// ProofBackid the licence
+const ProofBackid = async (req, res) => {
+  try {
+    const frontidimage = req.body.id;
+    console.log(frontidimage, "ghrhifdidhiueh");
+    const data = await User.findByIdAndUpdate(req.id, {
+      $set: { licenseBackSide: frontidimage },
+    });
+    if (data) {
+      res
+        .status(200)
+        .json({ message: "Image upload successful", success: true, data });
+    }
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
+
+// GetBike from user side
+const GetBike = async (req, res) => {
+  try {
+    const bikes = await bike.find().populate("ownerid");
+    const bikesdata = bikes.filter((value) => {
+      return value.status == true && value.ownerid.status == true;
+    });
+    res
+      .status(200)
+      .json({ success: true, message: "bike are find", bikesdata });
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
 
 module.exports = {
   Usersignup,
-  otpsubmit,
-  resendotp,
-  login,
-  googledata,
-  forgetPasswordOtp,
-  Resetpassword,
-  forgetveryfyotp,
-  CheckifUser
+  OtpSubmit,
+  ResendOtp,
+  Login,
+  GoogleData,
+  ForgetPasswordOtp,
+  ResetPassword,
+  ForgetVeryfyotp,
+  UserProfile,
+  GetProfile,
+  ImageUpload,
+  CheckifUser,
+  ProofFrontid,
+  ProofBackid,
+  GetBike,
 };

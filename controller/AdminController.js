@@ -1,15 +1,14 @@
-const User = require("../model/User_Model");
-const bike = require("../model/Bikeadd_Model");
+const User = require("../model/User");
+const bike = require("../model/BikeAdd");
 const jwt = require("jsonwebtoken");
-const Partner = require("../model/Partner_Model");
-const { response } = require("../routes/User_Routs");
+const Partner = require("../model/Partner");
+const { response } = require("../routes/User");
 const nodemailer = require("nodemailer");
 const { addAbortListener } = require("nodemailer/lib/xoauth2");
 
 //Adminlogin
 const Adminlogin = async (req, res) => {
   try {
-    console.log(req.body);
     const { email, password } = req.body.data;
     const Adminemail = process.env.EAMIL;
     const Adminpassword = process.env.PASSWORD;
@@ -58,7 +57,6 @@ const Blockuser = async (req, res) => {
     dataofuser.status = !dataofuser.status;
     await dataofuser.save();
 
-    console.log("");
     const userdata = await User.find();
     return res.status(200).send({ message: "sucess", success: true, userdata });
   } catch (error) {
@@ -203,6 +201,27 @@ const Bikerequest = async (req, res) => {
       .send({ message: "Internal server error", success: false });
   }
 };
+
+const viewRequest = async (req, res) => {
+  try {
+    const bikedata = await bike.findOne({_id:req.query.id})
+    if (bikedata) {
+      res
+        .status(200)
+        .json({ success: true, message: "bikes is find", bikedata });
+    } else {
+      res.status(201).json({ success: false, message: "something wrong" });
+    }
+  } catch (error) {
+    return res
+      .status(500)
+      .send({ message: "Internal server error", success: false });
+  }
+};
+
+
+
+
 // BikeAccept
 const BikeAccept = async (req, res) => {
   try {
@@ -323,7 +342,6 @@ const CheckifAdmin = (req, res) => {
           token: token,
         };
 
-        console.log(data, "Data");
 
         res.status(200).json({
           success: true,
@@ -356,4 +374,5 @@ module.exports = {
   PartnerBikeView,
   Blockbike,
   CheckifAdmin,
+  viewRequest
 };

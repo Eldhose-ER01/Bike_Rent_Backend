@@ -1,5 +1,5 @@
-const partner = require("../model/Partner_Model");
-const addbike = require("../model/Bikeadd_Model");
+const partner = require("../model/Partner");
+const addbike = require("../model/BikeAdd");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
@@ -75,7 +75,6 @@ const PartnerLogin = async (req, res) => {
     const { email, password } = req.body.data;
 
     const partnerdata = await partner.findOne({ email: email });
-    console.log(partnerdata);
     if (partnerdata.status == false) {
       return res
         .status(200)

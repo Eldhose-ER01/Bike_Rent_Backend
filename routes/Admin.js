@@ -1,7 +1,7 @@
 const express=require('express')
 const adminRoutes=express()
 const middleware=require('../middleware/Auth')
-const adminController=require('../controller/Admin_Controller')
+const adminController=require('../controller/AdminController')
 
 adminRoutes.post('/login',adminController.Adminlogin)
 adminRoutes.get('/userlist',adminController.LoadUser)
@@ -18,6 +18,7 @@ adminRoutes.put('/rejectbike',adminController.RejectAccept)
 adminRoutes.post('/bikepartnerlist',adminController.PartnerBikeView)
 adminRoutes.put('/blockbike',adminController.Blockbike)
 adminRoutes.get('/checkifadmin',adminController.CheckifAdmin)
+adminRoutes.get('/bikerequstview',adminController.viewRequest)
 
 
 

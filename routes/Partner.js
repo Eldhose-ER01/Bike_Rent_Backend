@@ -1,7 +1,7 @@
 const express=require('express')
 const partnerRoute=express()
 const middleware=require('../middleware/Auth.js')
-const PartnerController=require('../controller/Partner_Controller.js')
+const PartnerController=require('../controller/PartnerController.js')
 
 
 partnerRoute.post('/signup',PartnerController.PartnerSignup)

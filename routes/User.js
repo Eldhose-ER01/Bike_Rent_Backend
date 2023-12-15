@@ -1,6 +1,6 @@
 const express = require('express');
 const userRoute = express();
-const userController = require('../controller/User_Controller');
+const userController = require('../controller/UserController');
 const middleware = require('../middleware/Auth');
 
 
@@ -20,5 +20,10 @@ userRoute.post('/imageupload', middleware.userAuth, userController.ImageUpload);
 userRoute.post('/licenseFrontSide',middleware.userAuth,userController.ProofFrontid)
 userRoute.post('/licenseBackSide',middleware.userAuth,userController.ProofBackid)
 userRoute.get('/getbike',userController.GetBike)
+userRoute.post('/datesfind',userController.FindbikeDateBased)
+// userRoute.post('/booking',middleware.userAuth,userController.FinalBooking)
+userRoute.post('/create-checkout-session',middleware.userAuth,userController.Payments)
+
+
 
 module.exports = userRoute;

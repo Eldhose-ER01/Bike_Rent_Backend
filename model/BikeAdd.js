@@ -48,6 +48,13 @@ const BikeaddSchema=new mongoose.Schema({
         type:Boolean,
         default:true
     }, 
+    bookingdates: [
+        {
+          startingdate: { type: String },
+          endingdate: { type: String },
+        },
+      ],
+
 
 })
 module.exports=mongoose.model("Bike",BikeaddSchema)

@@ -1,4 +1,4 @@
-const partner = require("../model/Partner_Model");
+const partner = require("../model/Partner");
 const jwt = require("jsonwebtoken");
 
 const userAuth = async (req, res, next) => {

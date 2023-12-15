@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 const express=require('express')
 const app=express()
-const userRoute = require('./routes/User_Routs')
-const adminRoute=require('./routes/Admin_Routes')
-const partnerRoute=require('./routes/Partner_Routes')
+const userRoute = require('./routes/User')
+const adminRoute=require('./routes/Admin')
+const partnerRoute=require('./routes/Partner')
 const cors=require('cors')
 const path = require('path')
 

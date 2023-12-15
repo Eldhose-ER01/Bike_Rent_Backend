@@ -1,9 +1,13 @@
-const User = require("../model/User_Model");
+const User = require("../model/User");
+const Booking=require('../model/Booking')
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const otpGenerator = require("otp-generator");
 const jwt = require("jsonwebtoken");
-const bike = require("../model/Bikeadd_Model");
+const bike = require("../model/BikeAdd");
+const Partner = require("../model/Partner");
+const Stripe=require("stripe")
+const stripe=Stripe('sk_test_51ONBCPSCuu8kH4kkSPnawvp6PPYOmsowDJhrbnOHJYinxC8es0Hm9aM1rZ7PuFTLFp7ZfXnKTyOPpVmoiBdugt7p00yNAlu1PM')
 
 let globalotp = null;
 //Set up OTP creation,
@@ -31,7 +35,6 @@ function sMail(email, otp) {
 }
 //OTP Generate Function
 function sendotp(email) {
-  console.log(email);
   const otp = otpGenerator.generate(6, {
     digits: true,
     upperCaseAlphabets: false,
@@ -120,7 +123,6 @@ const OtpSubmit = async (req, res) => {
 //User Login IN client side
 const Login = async (req, res) => {
   try {
-    console.log(req.body.data);
     const user = req.body.data;
 
     const userdata = await User.findOne({ email: req.body.data.email });
@@ -274,7 +276,6 @@ const ResetPassword = async (req, res) => {
 
     if (password === resetpassword) {
       const hashpassword = await bcrypt.hash(password, 10);
-      console.log(hashpassword);
 
       const updatepassword = await User.updateOne(
         { email: email },
@@ -442,7 +443,6 @@ const ProofFrontid = async (req, res) => {
 const ProofBackid = async (req, res) => {
   try {
     const frontidimage = req.body.id;
-    console.log(frontidimage, "ghrhifdidhiueh");
     const data = await User.findByIdAndUpdate(req.id, {
       $set: { licenseBackSide: frontidimage },
     });
@@ -460,6 +460,14 @@ const ProofBackid = async (req, res) => {
 // GetBike from user side
 const GetBike = async (req, res) => {
   try {
+ 
+    const inputDate = new Date('2023-12-09T04:58:55.714Z');
+const day = inputDate.getUTCDate();
+const month = inputDate.getUTCMonth() + 1; // Months are zero-indexed, so we add 1
+const year = inputDate.getUTCFullYear();
+
+const formattedDate = `${day}/${month}/${year}`;
+// console.log(formattedDate);
     const bikes = await bike.find().populate("ownerid");
     const bikesdata = bikes.filter((value) => {
       return value.status == true && value.ownerid.status == true;
@@ -468,10 +476,172 @@ const GetBike = async (req, res) => {
       .status(200)
       .json({ success: true, message: "bike are find", bikesdata });
   } catch (error) {
+    console.log(error.message);
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
 
+const FindbikeDateBased=async(req,res)=>{
+try {
+  console.log(req.body,'ts');
+  const {picktime,pickupdate,dropdate,DropTime,city}=req.body.data
+  
+const everyBike = await bike.find().populate("ownerid")
+const filtercity = everyBike.filter((value)=>value.ownerid.city == city)
+
+const findBike = filtercity.filter((value) => {
+  if (value.bookingdates.length === 0) {
+    return true;
+  } else {
+    const isOverlap = value.bookingdates.some((dates) => {
+      return (
+       
+        (pickupdate >= dates.startingdate && pickupdate <= dates.endingdate) ||
+        (dropdate >= dates.startingdate && dropdate <= dates.endingdate) ||
+        (pickupdate <= dates.startingdate && dropdate >= dates.endingdate)
+      );
+    });
+
+    return !isOverlap;
+  }
+});
+console.log(findBike.length)
+
+res.status(200).json({ message: "bike filtered", success: true,bikedata:findBike });
+
+} catch (error) {
+  res.status(500).json({ message: "Internal Server Error", success: false, });
+
+}
+}
+
+// const FinalBooking=async(req,res)=>{
+//   console.log("entering in to booking---------");
+//   try {
+//     const userid=req.id
+//     const BikeId = req.body.data[0].BikeId._id
+//     const {totalAmount,cgst,sgst,finalAmount} =req.body.data[1]
+
+    // const {picktime,pickupdate,dropdate,DropTime}=req.body.data[0]
+//     const bookingdata=new Booking({
+//       pickUpDate:pickupdate,
+//       dropTime:DropTime,
+//       dropDate:dropdate,
+//       PickupTime:picktime,
+//       bike:BikeId,
+//       TotalAmount:totalAmount,
+//       grandTotal:finalAmount,
+//       Sgst:sgst,
+//       Cgst:cgst,
+//       user:userid
+
+
+//     })
+//     const date = {
+//       startingdate: pickupdate,
+//       endingdate: dropdate,
+//     };
+
+//     console.log(date, "hhhhhhhhhhhhh");
+
+//     await bookingdata.save();
+
+//     const findbike = await bike.findOneAndUpdate(
+//       { _id: BikeId },
+//       {
+//         $push: {
+//           bookingdates: date,
+//         },
+//       }
+//     );
+
+//     console.log(bookingdata, "booking");
+//     if(bookingdata){
+//       res.status(200).json({success:true,message:"data stored"})
+//     }else{
+//       res.status(201).json({success:false,message:"data not stored"})
+//     }
+//   } catch (error) {
+//     res.status(500).json({ message: "Internal Server Error", success: false });
+//   }
+// }
+
+
+const Payments = async (req, res) => {
+  try {
+    
+    // Extract data from the request
+    const { id: userid } = req.id;
+    console.log(req.body.data,"reqqqqqqqqqqqqqqqqqq");
+    const BikeId = req.body.data[0].BikeId._id;
+    const { totalAmount, cgst, sgst, finalAmount,helmet } = req.body.data[1];
+    const { picktime, pickupdate, dropdate, DropTime } = req.body.data[0];
+
+    // Create a Stripe checkout session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'inr',
+            product_data: {
+              name: 'Bikes',
+            },
+            unit_amount: finalAmount * 100,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: 'http://localhost:3000/successbooking',
+      cancel_url: 'http://localhost:3000/bookingcancel',
+    });
+
+    // Send the session URL to the client
+    
+    // Save booking data to the database
+    const bookingdata = new Booking({
+      pickUpDate: pickupdate,
+      dropTime: DropTime,
+      dropDate: dropdate,
+      PickupTime: picktime,
+      bike: BikeId,
+      TotalAmount: totalAmount,
+      grandTotal: finalAmount,
+      Sgst: sgst,
+      Cgst: cgst,
+      user: userid,
+      helmet:helmet
+    });
+
+    const date = {
+      startingdate: pickupdate,
+      endingdate: dropdate,
+    };
+
+    // Save booking data
+    await bookingdata.save();
+
+    // Update bike information with booking dates
+    await bike.findOneAndUpdate(
+      { _id: BikeId },
+      {
+        $push: {
+          bookingdates: date,
+        },
+      }
+    );
+
+    // Respond to the client
+    // Send the session URL and JSON response in one call
+res.status(200).json({ url: session.url, success: true, message: 'Data stored' });
+
+  } catch (error) {
+    // Handle errors
+    console.error('Error in Payments:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
 module.exports = {
   Usersignup,
   OtpSubmit,
@@ -488,4 +658,7 @@ module.exports = {
   ProofFrontid,
   ProofBackid,
   GetBike,
+  FindbikeDateBased,
+  // FinalBooking,
+  Payments
 };

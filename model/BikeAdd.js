@@ -36,9 +36,17 @@ const BikeaddSchema=new mongoose.Schema({
        type:String,
     
     },
+    rcimage:{
+        type:String,
+     
+     },
     isVerifed:{
         type:String,
         default:"notVerified"
+    },
+    user:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"user",
     },
     ownerid:{
          type:mongoose.Schema.Types.ObjectId,

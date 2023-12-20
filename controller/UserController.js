@@ -1,13 +1,15 @@
 const User = require("../model/User");
-const Booking=require('../model/Booking')
+const Booking = require("../model/Booking");
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const otpGenerator = require("otp-generator");
 const jwt = require("jsonwebtoken");
 const bike = require("../model/BikeAdd");
 const Partner = require("../model/Partner");
-const Stripe=require("stripe")
-const stripe=Stripe('sk_test_51ONBCPSCuu8kH4kkSPnawvp6PPYOmsowDJhrbnOHJYinxC8es0Hm9aM1rZ7PuFTLFp7ZfXnKTyOPpVmoiBdugt7p00yNAlu1PM')
+const Stripe = require("stripe");
+const stripe = Stripe(
+  "sk_test_51ONBCPSCuu8kH4kkSPnawvp6PPYOmsowDJhrbnOHJYinxC8es0Hm9aM1rZ7PuFTLFp7ZfXnKTyOPpVmoiBdugt7p00yNAlu1PM"
+);
 
 let globalotp = null;
 //Set up OTP creation,
@@ -460,14 +462,14 @@ const ProofBackid = async (req, res) => {
 // GetBike from user side
 const GetBike = async (req, res) => {
   try {
- 
-    const inputDate = new Date('2023-12-09T04:58:55.714Z');
-const day = inputDate.getUTCDate();
-const month = inputDate.getUTCMonth() + 1; // Months are zero-indexed, so we add 1
-const year = inputDate.getUTCFullYear();
+   
+    const inputDate = new Date();
+    const day = inputDate.getUTCDate();
+    const month = inputDate.getUTCMonth() + 1; // Months are zero-indexed, so we add 1
+    const year = inputDate.getUTCFullYear();
 
-const formattedDate = `${day}/${month}/${year}`;
-// console.log(formattedDate);
+    const formattedDate = `${day}/${month}/${year}`;
+    console.log(formattedDate);
     const bikes = await bike.find().populate("ownerid");
     const bikesdata = bikes.filter((value) => {
       return value.status == true && value.ownerid.status == true;
@@ -481,167 +483,256 @@ const formattedDate = `${day}/${month}/${year}`;
   }
 };
 
-const FindbikeDateBased=async(req,res)=>{
-try {
-  console.log(req.body,'ts');
-  const {picktime,pickupdate,dropdate,DropTime,city}=req.body.data
-  
-const everyBike = await bike.find().populate("ownerid")
-const filtercity = everyBike.filter((value)=>value.ownerid.city == city)
+const FindbikeDateBased = async (req, res) => {
+  try {
+    console.log(req.body, "ts");
+    const id=req.id
+    const user=await User.findById(id)
+    const wallet=user.wallet
+    const {pickupdate,dropdate,city } = req.body.data;
 
-const findBike = filtercity.filter((value) => {
-  if (value.bookingdates.length === 0) {
-    return true;
-  } else {
-    const isOverlap = value.bookingdates.some((dates) => {
-      return (
-       
-        (pickupdate >= dates.startingdate && pickupdate <= dates.endingdate) ||
-        (dropdate >= dates.startingdate && dropdate <= dates.endingdate) ||
-        (pickupdate <= dates.startingdate && dropdate >= dates.endingdate)
-      );
+    const everyBike = await bike.find().populate("ownerid")
+   
+    console.log(wallet,"userrrrrrrr");
+    const filtercity = everyBike.filter((value) => value.ownerid.city == city);
+
+    const findBike = filtercity.filter((value) => {
+      if (value.bookingdates.length === 0) {
+        return true;
+      } else {
+        const isOverlap = value.bookingdates.some((dates) => {
+          return (
+            (pickupdate >= dates.startingdate &&
+              pickupdate <= dates.endingdate) ||
+            (dropdate >= dates.startingdate && dropdate <= dates.endingdate) ||
+            (pickupdate <= dates.startingdate && dropdate >= dates.endingdate)
+          );
+        });
+
+        return !isOverlap;
+      }
     });
+    console.log(findBike,'this is bike data');
+    // const data = { ...findBike, wallet };
+//  console.log(data,"data djfidghdfghfk jjjjjjjjjj");
 
-    return !isOverlap;
+    res
+      .status(200)
+      .json({ message: "bike filtered", success: true, bikedata: findBike ,wallet:wallet});
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error", success: false });
   }
-});
-console.log(findBike.length)
-
-res.status(200).json({ message: "bike filtered", success: true,bikedata:findBike });
-
-} catch (error) {
-  res.status(500).json({ message: "Internal Server Error", success: false, });
-
-}
-}
-
-// const FinalBooking=async(req,res)=>{
-//   console.log("entering in to booking---------");
-//   try {
-//     const userid=req.id
-//     const BikeId = req.body.data[0].BikeId._id
-//     const {totalAmount,cgst,sgst,finalAmount} =req.body.data[1]
-
-    // const {picktime,pickupdate,dropdate,DropTime}=req.body.data[0]
-//     const bookingdata=new Booking({
-//       pickUpDate:pickupdate,
-//       dropTime:DropTime,
-//       dropDate:dropdate,
-//       PickupTime:picktime,
-//       bike:BikeId,
-//       TotalAmount:totalAmount,
-//       grandTotal:finalAmount,
-//       Sgst:sgst,
-//       Cgst:cgst,
-//       user:userid
-
-
-//     })
-//     const date = {
-//       startingdate: pickupdate,
-//       endingdate: dropdate,
-//     };
-
-//     console.log(date, "hhhhhhhhhhhhh");
-
-//     await bookingdata.save();
-
-//     const findbike = await bike.findOneAndUpdate(
-//       { _id: BikeId },
-//       {
-//         $push: {
-//           bookingdates: date,
-//         },
-//       }
-//     );
-
-//     console.log(bookingdata, "booking");
-//     if(bookingdata){
-//       res.status(200).json({success:true,message:"data stored"})
-//     }else{
-//       res.status(201).json({success:false,message:"data not stored"})
-//     }
-//   } catch (error) {
-//     res.status(500).json({ message: "Internal Server Error", success: false });
-//   }
-// }
+};
 
 
 const Payments = async (req, res) => {
   try {
-    
-    // Extract data from the request
-    const { id: userid } = req.id;
-    console.log(req.body.data,"reqqqqqqqqqqqqqqqqqq");
-    const BikeId = req.body.data[0].BikeId._id;
-    const { totalAmount, cgst, sgst, finalAmount,helmet } = req.body.data[1];
-    const { picktime, pickupdate, dropdate, DropTime } = req.body.data[0];
-
-    // Create a Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'inr',
-            product_data: {
-              name: 'Bikes',
+    const users = req.id;
+    const userdata = await User.findOne({ _id: users });
+    if (userdata.licenseFrontSide && userdata.licenseBackSide) {
+      const BikeId = req.body.data[0].BikeId._id;
+      const bikes=await bike.findById(BikeId)
+      console.log(bikes,"bikeeeeeeeeee");
+      const { totalAmount, cgst, sgst, finalAmount, helmet, Paymentmethod } = req.body.data[1];
+      const { picktime, pickupdate, dropdate, DropTime } = req.body.data[0];
+      console.log(picktime, pickupdate, dropdate, DropTime,"this is paymennt date");
+      if (Paymentmethod == "online") {
+        var session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              price_data: {
+                currency: "inr",
+                product_data: {
+                  name: "Bikes",
+                },
+                unit_amount: finalAmount * 100,
+              },
+              quantity: 1,
             },
-            unit_amount: finalAmount * 100,
-          },
-          quantity: 1,
-        },
-      ],
-      mode: 'payment',
-      success_url: 'http://localhost:3000/successbooking',
-      cancel_url: 'http://localhost:3000/bookingcancel',
-    });
+          ],
+          mode: "payment",
+          success_url: "http://localhost:3000/successbooking",
+          cancel_url: "http://localhost:3000/bookingcancel",
+        });
+      } else if(Paymentmethod=="wallet") {
+        const userdata = await User.findById(users);
+        if (userdata.wallet >= finalAmount) {
+          const walletamount = userdata.wallet - finalAmount;
 
-    // Send the session URL to the client
-    
-    // Save booking data to the database
-    const bookingdata = new Booking({
-      pickUpDate: pickupdate,
-      dropTime: DropTime,
-      dropDate: dropdate,
-      PickupTime: picktime,
-      bike: BikeId,
-      TotalAmount: totalAmount,
-      grandTotal: finalAmount,
-      Sgst: sgst,
-      Cgst: cgst,
-      user: userid,
-      helmet:helmet
-    });
-
-    const date = {
-      startingdate: pickupdate,
-      endingdate: dropdate,
-    };
-
-    // Save booking data
-    await bookingdata.save();
-
-    // Update bike information with booking dates
-    await bike.findOneAndUpdate(
-      { _id: BikeId },
-      {
-        $push: {
-          bookingdates: date,
-        },
+           await User.findByIdAndUpdate(
+            users,
+            {
+              $set: {
+                wallet: walletamount,
+              },
+            },
+            { new: true }
+          );
+          res.status(200).json({sucess:true,message:"data find"})
+        } else {
+          res.status(201).json({success:false,notamount:"Wallet has no money to make this booking"})
+          return
+        }
       }
-    );
+      const bookingdata = new Booking({
+        pickUpDate: pickupdate,
+        dropTime: DropTime,
+        dropDate: dropdate,
+        PickupTime: picktime,
+        bike: BikeId,
+        TotalAmount: totalAmount,
+        grandTotal: finalAmount,
+        Sgst: sgst,
+        Cgst: cgst,
+        user: users,
+        helmet: helmet,
+        paymentMethod:Paymentmethod,
+        partner:bikes.ownerid
+      });
 
-    // Respond to the client
-    // Send the session URL and JSON response in one call
-res.status(200).json({ url: session.url, success: true, message: 'Data stored' });
+      const date = {
+        startingdate: pickupdate,
+        endingdate: dropdate,
+      };
 
+      await bookingdata.save();
+
+      await bike.findOneAndUpdate(
+        { _id: BikeId },
+        {
+          $push: {
+            bookingdates: date,
+          },
+        }
+      );
+      if (Paymentmethod == "online") {
+        res
+          .status(200)
+          .json({ url: session.url, success: true, message: "Data stored" });
+      } else {
+        res.status(200).json({ success: true, wallet: "Data stored" });
+      }
+    } else {
+      res.status(201).json({
+        success: false,
+        messages: "Provide The Licence Image In Profile",
+      });
+    }
   } catch (error) {
     // Handle errors
-    console.error('Error in Payments:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    console.error("Error in Payments:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+const BookingView = async (req, res) => {
+  try {
+    const id = req.id;
+    const bookings = await Booking.find({ user: req.id })
+      .populate("bike")
+      .populate("user");
+console.log(bookings,"hhhhhhhh");
+const inputDate = new Date();
+    const day = inputDate.getUTCDate();
+    const month = inputDate.getUTCMonth() + 1; 
+    const year = inputDate.getUTCFullYear();
+
+    const formattedDate = `${day}/${month}/${year}`;
+    console.log(formattedDate,"formattedDateformattedDate");
+    var currentDateAndTime = new Date();
+
+    currentDateAndTime.setHours(12);    
+    currentDateAndTime.setMinutes(30);   
+    currentDateAndTime.setSeconds(0);   
+  
+   
+    var formattedTime = currentDateAndTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
+    console.log(formattedTime,"currentDateAndTimecurrentDateAndTimecurrentDateAndTime");
+
+    const pickUpDate=bookings.pickUpDate
+    const PickupTime=bookings.PickupTime
+    const dropDate=bookings.dropDate
+    const dropTime=bookings.dropTime
+    console.log(pickUpDate,PickupTime,dropDate,dropTime)
+    
+    if(formattedDate<=pickUpDate&&formattedTime<PickupTime&&formattedDate<=dropDate&&formattedTime<dropTime){
+      await Booking.findByIdAndUpdate(id,{$set:{
+        status:"Running"
+      }}, { new: true });
+    }else if(formattedDate>=dropDate&&formattedTime>dropTime){
+      await Booking.findByIdAndUpdate(id,{$set:{
+        status:"Running Completed"
+      }}, { new: true });
+    }else{
+      await Booking.findByIdAndUpdate(id,{$set:{
+        status:"Booked"
+      }}, { new: true });
+    }
+    if (bookings) {
+      res.status(200).send({ success: true, bookings });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+const CancelBooking = async (req, res) => {
+  try {
+    const id = req.query.id;
+    const inputDate = new Date();
+    const day = inputDate.getUTCDate();
+    const month = inputDate.getUTCMonth() + 1; 
+    const year = inputDate.getUTCFullYear();
+
+    const formattedDate = `${day}/${month}/${year}`;
+    var currentDateAndTime = new Date();
+
+    currentDateAndTime.setHours(12);    
+    currentDateAndTime.setMinutes(30);   
+    currentDateAndTime.setSeconds(0);   
+    
+   
+    var formattedTime = currentDateAndTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
+
+    const bookingData = await Booking.findById(id).populate("user");
+     const pickUpDate=bookingData.pickUpDate
+     const PickupTime=bookingData.PickupTime
+    if (!bookingData) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
+    }
+ if(formattedDate<=pickUpDate&&formattedTime<PickupTime ){
+
+ 
+    let wallet = bookingData.user.wallet;
+    const grandTotal = bookingData.grandTotal;
+    const sum = wallet + grandTotal;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      bookingData.user._id,
+      { $set: { wallet: sum } },
+      { new: true }
+    );
+
+    console.log(updatedUser.wallet, "wallet");
+    if (updatedUser) {
+      await Booking.findByIdAndUpdate(id,{$set:{
+        statuschange:false,status:"Canceld"
+      }}, { new: true });
+    }
+    res.status(200).json({ success: true, grandTotal });
+  }else{
+    res.status(201).json({success:false,messages:"your vechicle is running"})
+  }
+   
+  
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 module.exports = {
   Usersignup,
   OtpSubmit,
@@ -660,5 +751,7 @@ module.exports = {
   GetBike,
   FindbikeDateBased,
   // FinalBooking,
-  Payments
+  Payments,
+  BookingView,
+  CancelBooking,
 };

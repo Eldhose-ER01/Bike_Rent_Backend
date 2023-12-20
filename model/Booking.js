@@ -16,7 +16,7 @@ const BookingSchema=new mongoose.Schema({
         
     },
     pickUpDate:{
-        type:Date,
+        type:String,
         required:true
     },
     PickupTime:{
@@ -28,7 +28,7 @@ const BookingSchema=new mongoose.Schema({
         required:true
     },
     dropDate:{
-        type:Date,
+        type:String,
         required:true
     },
    
@@ -74,6 +74,10 @@ const BookingSchema=new mongoose.Schema({
     },
     helmet:{
         type:Number
+    },
+    statuschange:{
+        type:Boolean,
+        default:true
     }
    
 })

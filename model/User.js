@@ -32,9 +32,11 @@ const userSchema=new mongoose.Schema({
     },
     licenseBackSide:{
         type:String,
+        
     },
     wallet:{
-        type:Number
+        type:Number,
+        default:0
     },
     wallethistory:{
         type:[{

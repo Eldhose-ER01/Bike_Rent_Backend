@@ -15,6 +15,7 @@ partnerRoute.post('/addbike',middleware.partnerAuth,PartnerController.AddBikes)
 partnerRoute.get('/findbikes',middleware.partnerAuth,PartnerController.FindBikes)
 partnerRoute.post('/updatebike',middleware.partnerAuth,PartnerController.EditBikes)
 partnerRoute.put('/deletebike',middleware.partnerAuth,PartnerController.DeleteBike)
+partnerRoute.get('/getbooking',middleware.partnerAuth,PartnerController.Bookings)
 
 
 module.exports=partnerRoute

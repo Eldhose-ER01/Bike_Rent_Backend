@@ -2,6 +2,8 @@ const partner = require("../model/Partner");
 const addbike = require("../model/BikeAdd");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const Booking=require('../model/Booking')
+const { ObjectId } = require('mongodb')
 
 // PartnerSignup
 
@@ -281,6 +283,7 @@ const AddBikes = async (req, res) => {
       FuelType,
       RentPerDay,
       image,
+      rcimage
     } = req.body.data;
     const plateexist = await addbike.findOne({ platenumber: platenumber });
     if (!plateexist) {
@@ -295,6 +298,7 @@ const AddBikes = async (req, res) => {
         RentPerDay: RentPerDay,
         ownerid: req.id,
         image: image,
+        rcimage:rcimage
       });
       await bikedata.save();
       if (bikedata) {
@@ -359,6 +363,7 @@ const DeleteBike = async (req, res) => {
   try {
     const id = req.query.id;
     const data = await addbike.deleteOne({ _id: id });
+    
     if (data) {
       res.status(200).json({ success: true, message: "Bike deleted" });
     }
@@ -366,6 +371,29 @@ const DeleteBike = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
+
+const Bookings=async(req,res)=>{
+  try {
+  const id = req.id;
+
+  const objectId = new ObjectId(id);
+  console.log(objectId, 'this is partnerid');
+
+
+    const booking = await Booking.find({partner:objectId}).populate('user').populate('bike')
+    
+   console.log(booking,"12345666677");    
+
+    
+    if(booking){
+      res.status(200).json({success:true,message:"data find",booking})
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error", success: false });
+
+  }
+}
+
 
 module.exports = {
   PartnerSignup,
@@ -379,4 +407,5 @@ module.exports = {
   FindBikes,
   EditBikes,
   DeleteBike,
+  Bookings
 };

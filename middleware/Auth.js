@@ -1,4 +1,5 @@
 const partner = require("../model/Partner");
+const User=require("../model/User")
 const jwt = require("jsonwebtoken");
 
 const userAuth = async (req, res, next) => {
@@ -100,10 +101,21 @@ const partnerblock = async (req, res, next) => {
   }
 };
 
+const userblock = async (req, res, next) => {
+  const userdata= await User.findById(req.id);
+  console.log(userdata,"userdatauserdata");
+  if (userdata && userdata.status === true) {
+    next();
+  }else {
+    res.status(200).json({ success: false, message: "partner is blocked" });
+  }
+};
+
 module.exports = {
   userAuth,
   adminAuth,
   partnerAuth,
   partnerblock,
-  // checkuser
+  userblock
+
 };

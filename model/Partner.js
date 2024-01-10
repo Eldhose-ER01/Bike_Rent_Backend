@@ -53,6 +53,11 @@ const PartnerSchema=new mongoose.Schema({
     },
     district:{
         type:String,
+    },
+    Accept:{
+        type:String,
+        default:"Accept"
+
     }
 
 

@@ -1,9 +1,12 @@
+const mongoose=require('mongoose')
 const partner = require("../model/Partner");
+const User = require("../model/User");
 const addbike = require("../model/BikeAdd");
+const ChatModel=require('../model/Conversations')
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const Booking=require('../model/Booking')
-const { ObjectId } = require('mongodb')
+const Booking = require("../model/Booking");
+const { ObjectId } = require("mongodb");
 
 // PartnerSignup
 
@@ -100,7 +103,6 @@ const PartnerLogin = async (req, res) => {
             success: false,
           });
         } else {
-          const KEY = process.env.JWT_SECRET_KEY;
           const token = jwt.sign(
             { id: partnerdata._id, role: "partner" },
             process.env.JWT_SECRET_KEY,
@@ -283,7 +285,7 @@ const AddBikes = async (req, res) => {
       FuelType,
       RentPerDay,
       image,
-      rcimage
+      rcimage,
     } = req.body.data;
     const plateexist = await addbike.findOne({ platenumber: platenumber });
     if (!plateexist) {
@@ -298,7 +300,7 @@ const AddBikes = async (req, res) => {
         RentPerDay: RentPerDay,
         ownerid: req.id,
         image: image,
-        rcimage:rcimage
+        rcimage: rcimage,
       });
       await bikedata.save();
       if (bikedata) {
@@ -319,12 +321,19 @@ const AddBikes = async (req, res) => {
 const FindBikes = async (req, res) => {
   try {
     const id = req.id;
-    const bikelist = await addbike.find({ isVerifed: "verified", ownerid: id });
+    const page = parseInt(req.query.page) || 1;
+    const limit = 3;
+    const totalItems = await addbike.find({ isVerifed: "verified", ownerid: id }).countDocuments();
+    const totalPages = Math.ceil(totalItems / limit);
+   
+    const skip = (page - 1) * limit;
+    const bikelist = await addbike.find({ isVerifed: "verified", ownerid: id }).skip(skip)
+    .limit(limit);
 
     if (bikelist) {
       res
         .status(200)
-        .json({ success: true, message: "bikes are find", bikelist });
+        .json({ success: true, message: "bikes are find", bikelist,totalPages,page });
     } else {
       res.status(201).json({ success: false, message: "bikes not find" });
     }
@@ -363,7 +372,7 @@ const DeleteBike = async (req, res) => {
   try {
     const id = req.query.id;
     const data = await addbike.deleteOne({ _id: id });
-    
+
     if (data) {
       res.status(200).json({ success: true, message: "Bike deleted" });
     }
@@ -372,29 +381,281 @@ const DeleteBike = async (req, res) => {
   }
 };
 
-const Bookings=async(req,res)=>{
+const Bookings = async (req, res) => {
   try {
-  const id = req.id;
+    const id = req.id;
+    const objectId = new ObjectId(id);
+    const limit = 4;
+ 
+    // Count total documents without skipping and limiting
+    const totalItems = await Booking.countDocuments({ partner: objectId });
 
-  const objectId = new ObjectId(id);
-  console.log(objectId, 'this is partnerid');
+    const totalPages = Math.ceil(totalItems / limit);
+    const page = parseInt(req.query.page) || 1;
+    const skip = (page - 1) * limit;
 
+    const booking = await Booking.find({ partner: objectId })
+      .populate("user")
+      .populate("bike")
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
 
-    const booking = await Booking.find({partner:objectId}).populate('user').populate('bike')
-    
-   console.log(booking,"12345666677");    
+    // Check if any documents were found
+    if (booking.length > 0) {
+      res.status(200).json({
+        success: true,
+        message: "Data found",
+        booking,
+        totalPages,
+        page,
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: "No data found",
+        totalPages,
+        page,
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
 
-    
-    if(booking){
-      res.status(200).json({success:true,message:"data find",booking})
+const BookingStatusChange = async (req, res) => {
+  try {
+    const id = req.query.id;
+    const inputDate = new Date();
+    const day = inputDate.getUTCDate();
+    const month = inputDate.getUTCMonth() + 1;
+    const year = inputDate.getUTCFullYear();
+
+    const formattedDate = `${year}-${month}-${day}`;
+
+    var currentDateAndTime = new Date();
+
+    currentDateAndTime.setHours(12);
+    currentDateAndTime.setMinutes(30);
+    currentDateAndTime.setSeconds(0);
+
+    var formattedTime = currentDateAndTime.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "numeric",
+      hour12: true,
+    });
+
+    const bookingdata = await Booking.findById(id);
+
+    const pickUpDate = bookingdata.pickUpDate;
+    const dropDate = bookingdata.dropDate;
+    const PickupTime = bookingdata.PickupTime;
+    const dropTime = bookingdata.dropTime;
+
+    if (formattedDate > pickUpDate && formattedDate <= dropDate) {
+      await Booking.findByIdAndUpdate(
+        id,
+        { $set: { status: "Running" } },
+        { new: true }
+      );
+      res.status(200).json({ success: true, messages: "sucesss" });
+    } else if (dropDate <= formattedDate && dropTime < formattedTime) {
+      await Booking.findByIdAndUpdate(
+        id,
+        { $set: { status: "Completed" } },
+        { new: true }
+      );
+      res.status(200).json({ success: true, complete: "sucesss" });
+    } else {
+      res.status(201).json({ error: "error" });
     }
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
 
+const BookingCancel = async (req, res) => {
+  try {
+    const id = req.query.id;
+    const bookingData = await Booking.findById(id).populate("user");
+    let wallet = bookingData.user.wallet;
+    const grandTotal = bookingData.grandTotal;
+    const sum = wallet + grandTotal;
+
+    if (bookingData.status == "booked") {
+      const updatedUser = await User.findByIdAndUpdate(
+        bookingData.user._id,
+        { $set: { wallet: sum } },
+        { new: true }
+      );
+
+      console.log(updatedUser.wallet, "wallet");
+      if (updatedUser) {
+        await Booking.findByIdAndUpdate(
+          id,
+          {
+            $set: {
+              statuschange: false,
+              status: "Canceld",
+            },
+          },
+          { new: true }
+        );
+      }
+      res.status(200).json({ success: true, message: "cancel" });
+    } else if (bookingData.status == "Running") {
+      res.status(201).json({ success: false, Running: "not canceld" });
+    } else if (bookingData.status == "Completed") {
+      res.status(201).json({ success: false, Completed: "not canceld" });
+    } else if (bookingData.status == "Canceld") {
+      res.status(201).json({ success: false, canceld: "not canceld" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
+
+const ChartView = async (req, res) => {
+  try {
+    const id = req.id;
+    const limit = 5;
+
+    // Count total documents without skipping and limiting
+    const totalItems = await Booking.countDocuments({ partner: id });
+
+    const totalPages = Math.ceil(totalItems / limit);
+    const page = parseInt(req.query.page) || 1;
+    const skip = (page - 1) * limit;
+
+    const findbooking = await Booking.find({ partner: id })
+      .populate("user")
+      .populate('bike')
+      .skip(skip)
+      .limit(limit);
+
+    let total = 0;
+    let complete = [];
+    let unique = 0;
+
+    if (findbooking) {
+      complete = findbooking.filter((booking) => booking.status === "Completed");
+
+      const userss = findbooking.map((value) => value.user.email);
+      unique = Array.from(new Set(userss));
+
+      if (complete.length > 0) {
+        total = complete.reduce((accumulator, currentValue) => accumulator + currentValue.grandTotal, 0);
+      } else {
+        console.log("No completed bookings");
+      }
+
+      const bookingID = findbooking.map((booking) => booking._id);
+      const threeDigitIDs = bookingID.map((hexString) => {
+        const decimalNumber = parseInt(hexString, 16);
+        return ('11' + (decimalNumber % 1000)).slice(-3); // Ensure it's a three-digit number
+      });
+
+      const sortedNumericIDs = threeDigitIDs.map(Number).sort((a, b) => a - b);
+
+      res.status(200).json({
+        success: true,
+        message: "Data found",
+        findbooking,
+        total,
+        complete,
+        unique,
+        Ids: sortedNumericIDs,
+        totalPages,
+        page
+      });
+    } else {
+      console.log("No bookings found");
+      res.status(404).json({ success: false, message: "No bookings found" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
+
+
+const uniquechatuser = async (req, res) => {
+  try {
+    const id = req.id;
+
+    const objectId = new ObjectId(id);
+
+    const bookings = await Booking.find({ partner: objectId })
+      .populate("user")
+      .populate("bike");
+
+    const uniqueUserIds = [...new Set(bookings.map(booking => booking.user._id))];
+
+    const uniqueUsers = await User.find({ _id: { $in: uniqueUserIds } });
+    res.status(200).json({ success: true, booking:uniqueUsers });
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
+
+
+const saveChat = async (req, res) => {
+  try {
+      const {  chat, userid } = req.body.data;
+      const userIds = new mongoose.Types.ObjectId(userid)
+
+      const findChat = await ChatModel.find({
+        $and: [
+          { partnerId: req.id },
+          { userId:userIds  }
+        ]
+      }).populate('userId').populate('partnerId');
+
+      if (findChat) {
+        await ChatModel.findOneAndUpdate(
+          { partnerId:req.id, userId:userIds },
+          { $push: { chat: chat } },
+          { new: true, upsert: true }
+        )
+          res.json({ success: true })
+      } else {
+          res.json({ success: false })
+      }
+  } catch (error) {
+      console.log(error);
+      res.status(500).json({ success: false, error: "Internal Server Error" });
+  }
+};
+
+const getChat = async (req, res) => {
+  try {
+      const id = req.query.id;
+      const userId = new mongoose.Types.ObjectId(req.query.id)
+
+
+      const findChat = await ChatModel.find({
+        $and: [
+          { partnerId: req.id },
+          { userId:userId  }
+        ]
+      }).populate('userId').populate('partnerId');
+      if (findChat) {
+        console.log('this is my finded chat ')
+        res.status(200).send({
+              success: true,
+              findChat,
+          });
+      } else {
+          res.status(404).send({
+              success: false,
+              message: "Chat not found",
+          });
+      }
+  } catch (error) {
+      console.log(error);
   }
 }
-
-
 module.exports = {
   PartnerSignup,
   PartnerLogin,
@@ -407,5 +668,12 @@ module.exports = {
   FindBikes,
   EditBikes,
   DeleteBike,
-  Bookings
+  Bookings,
+  BookingStatusChange,
+  BookingCancel,
+  ChartView,
+  uniquechatuser,
+  saveChat,
+  getChat
+  
 };

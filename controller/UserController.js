@@ -1,12 +1,16 @@
 const User = require("../model/User");
 const Booking = require("../model/Booking");
+const ChatModel = require("../model/Conversations");
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const otpGenerator = require("otp-generator");
 const jwt = require("jsonwebtoken");
 const bike = require("../model/BikeAdd");
 const Partner = require("../model/Partner");
+const Coupon = require("../model/Coupon");
 const Stripe = require("stripe");
+const mongoose = require("mongoose");
+
 const stripe = Stripe(
   "sk_test_51ONBCPSCuu8kH4kkSPnawvp6PPYOmsowDJhrbnOHJYinxC8es0Hm9aM1rZ7PuFTLFp7ZfXnKTyOPpVmoiBdugt7p00yNAlu1PM"
 );
@@ -441,7 +445,33 @@ const ProofFrontid = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
-// ProofBackid the licence
+
+const findbikes = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 8;
+    const skip = (page - 1) * limit;
+    const totalItems = await bike.countDocuments();
+    const totalPages = Math.ceil(totalItems / limit);
+    const bikes = await bike.find().populate("ownerid").skip(skip).limit(limit);
+
+    const bikesdata = bikes.filter((value) => {
+      return value.status == true && value.ownerid.status == true;
+    });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "bike are find",
+        bikesdata,
+        page,
+        totalPages,
+      });
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
+
 const ProofBackid = async (req, res) => {
   try {
     const frontidimage = req.body.id;
@@ -460,20 +490,22 @@ const ProofBackid = async (req, res) => {
 };
 
 // GetBike from user side
-const GetBike = async (req, res) => {
+
+const BikeSelect = async (req, res) => {
   try {
-   
     const inputDate = new Date();
     const day = inputDate.getUTCDate();
     const month = inputDate.getUTCMonth() + 1; // Months are zero-indexed, so we add 1
     const year = inputDate.getUTCFullYear();
 
     const formattedDate = `${day}/${month}/${year}`;
-    console.log(formattedDate);
+
     const bikes = await bike.find().populate("ownerid");
+
     const bikesdata = bikes.filter((value) => {
       return value.status == true && value.ownerid.status == true;
     });
+
     res
       .status(200)
       .json({ success: true, message: "bike are find", bikesdata });
@@ -485,15 +517,12 @@ const GetBike = async (req, res) => {
 
 const FindbikeDateBased = async (req, res) => {
   try {
-    console.log(req.body, "ts");
-    const id=req.id
-    const user=await User.findById(id)
-    const wallet=user.wallet
-    const {pickupdate,dropdate,city } = req.body.data;
+    const id = req.id;
+    const user = await User.findById(id);
+    const wallet = user.wallet;
+    const { pickupdate, dropdate, city } = req.body.data;
+    const everyBike = await bike.find().populate("ownerid");
 
-    const everyBike = await bike.find().populate("ownerid")
-   
-    console.log(wallet,"userrrrrrrr");
     const filtercity = everyBike.filter((value) => value.ownerid.city == city);
 
     const findBike = filtercity.filter((value) => {
@@ -512,31 +541,84 @@ const FindbikeDateBased = async (req, res) => {
         return !isOverlap;
       }
     });
-    console.log(findBike,'this is bike data');
-    // const data = { ...findBike, wallet };
-//  console.log(data,"data djfidghdfghfk jjjjjjjjjj");
 
-    res
-      .status(200)
-      .json({ message: "bike filtered", success: true, bikedata: findBike ,wallet:wallet});
+    res.status(200).json({
+      message: "bike filtered",
+      success: true,
+      bikedata: findBike,
+      wallet: wallet,
+    });
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
 
 
+
+
+
+const AlredyBooked = async (req, res) => {
+  try {
+    // const id = req.id;
+    // const user = await User.findById(id);
+    // const wallet = user.wallet;
+    const { pickupdate, dropdate, city } = req.body.data[0];
+    const { BikeId } = req.body.data[0].BikeId._id;
+console.log(BikeId,dropdate,pickupdate,"BikeIdBikeIdBikeIdBikeId");
+    const everyBike = await bike.find().populate("ownerid");
+
+    const filtercity = everyBike.filter((value) => value.ownerid.city == city);
+
+    const findBike = filtercity.filter((value) => {
+      if (value.bookingdates.length === 0) {
+        return true;
+      } else {
+        const isOverlap = value.bookingdates.some((dates) => {
+          return (
+            (pickupdate >= dates.startingdate &&
+              pickupdate <= dates.endingdate) ||
+            (dropdate >= dates.startingdate && dropdate <= dates.endingdate) ||
+            (pickupdate <= dates.startingdate && dropdate >= dates.endingdate)
+          );
+        });
+
+        return !isOverlap;
+      }
+    })
+
+    // const alredybook=findBike.find((value)=>value._id==)
+
+    res.status(200).json({
+      message: "bike filtered",
+      success: true,
+      bikedata: findBike,
+  
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error", success: false });
+  }
+};
+
 const Payments = async (req, res) => {
   try {
+    console.log(req.body,"")
     const users = req.id;
     const userdata = await User.findOne({ _id: users });
     if (userdata.licenseFrontSide && userdata.licenseBackSide) {
       const BikeId = req.body.data[0].BikeId._id;
-      const bikes=await bike.findById(BikeId)
-      console.log(bikes,"bikeeeeeeeeee");
-      const { totalAmount, cgst, sgst, finalAmount, helmet, Paymentmethod } = req.body.data[1];
+      const bikes = await bike.findById(BikeId);
+      const {
+        totalAmount,
+        cgst,
+        sgst,
+        finalAmount,
+        helmet,
+        Paymentmethod,
+        coupon,
+      } = req.body.data[1];
       const { picktime, pickupdate, dropdate, DropTime } = req.body.data[0];
-      console.log(picktime, pickupdate, dropdate, DropTime,"this is paymennt date");
       if (Paymentmethod == "online") {
+        const amount_online = finalAmount - coupon;
         var session = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
           line_items: [
@@ -546,21 +628,21 @@ const Payments = async (req, res) => {
                 product_data: {
                   name: "Bikes",
                 },
-                unit_amount: finalAmount * 100,
+                unit_amount: amount_online * 100,
               },
               quantity: 1,
             },
           ],
           mode: "payment",
           success_url: "http://localhost:3000/successbooking",
-          cancel_url: "http://localhost:3000/bookingcancel",
+          cancel_url: "http://localhost:3000/bikebooking",
         });
-      } else if(Paymentmethod=="wallet") {
+      } else if (Paymentmethod == "wallet") {
         const userdata = await User.findById(users);
         if (userdata.wallet >= finalAmount) {
           const walletamount = userdata.wallet - finalAmount;
 
-           await User.findByIdAndUpdate(
+          await User.findByIdAndUpdate(
             users,
             {
               $set: {
@@ -569,10 +651,12 @@ const Payments = async (req, res) => {
             },
             { new: true }
           );
-          res.status(200).json({sucess:true,message:"data find"})
         } else {
-          res.status(201).json({success:false,notamount:"Wallet has no money to make this booking"})
-          return
+          res.status(201).json({
+            success: false,
+            notamount: "Wallet has no money to make this booking",
+          });
+          return;
         }
       }
       const bookingdata = new Booking({
@@ -582,13 +666,13 @@ const Payments = async (req, res) => {
         PickupTime: picktime,
         bike: BikeId,
         TotalAmount: totalAmount,
-        grandTotal: finalAmount,
+        grandTotal: finalAmount - coupon,
         Sgst: sgst,
         Cgst: cgst,
         user: users,
         helmet: helmet,
-        paymentMethod:Paymentmethod,
-        partner:bikes.ownerid
+        paymentMethod: Paymentmethod,
+        partner: bikes.ownerid,
       });
 
       const date = {
@@ -596,7 +680,37 @@ const Payments = async (req, res) => {
         endingdate: dropdate,
       };
 
-      await bookingdata.save();
+      await bookingdata.save().then(async (res) => {
+        const findchatpartner = await ChatModel.find({
+          partnerId: bikes.ownerid,
+        });
+
+        if (!findchatpartner) {
+          const userchat = await ChatModel.find({ userId: users });
+          if (!userchat) {
+            const openChat = new ChatModel({
+              userId: users,
+              partnerId: bikes.ownerid,
+            });
+            await openChat.save();
+          }
+        } else {
+          const userchat = await ChatModel.find({ userId: users });
+          if (!userchat) {
+            const openChat = new ChatModel({
+              userId: users,
+              partnerId: bikes.ownerid,
+            });
+            await openChat.save();
+          } else {
+            const openChat = new ChatModel({
+              userId: users,
+              partnerId: bikes.ownerid,
+            });
+            await openChat.save();
+          }
+        }
+      });
 
       await bike.findOneAndUpdate(
         { _id: BikeId },
@@ -610,126 +724,286 @@ const Payments = async (req, res) => {
         res
           .status(200)
           .json({ url: session.url, success: true, message: "Data stored" });
+      } else if (Paymentmethod == "wallet") {
+        res
+          .status(200)
+          .json({
+            success: true,
+            message: "Booking Started",
+            wallet: "successbooking",
+          });
       } else {
-        res.status(200).json({ success: true, wallet: "Data stored" });
+        res
+          .status(400)
+          .json({ success: false, message: "Invalid payment method" });
       }
-    } else {
-      res.status(201).json({
-        success: false,
-        messages: "Provide The Licence Image In Profile",
-      });
     }
   } catch (error) {
     // Handle errors
-    console.error("Error in Payments:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
 const BookingView = async (req, res) => {
   try {
-    const id = req.id;
+    const limit = 5;
+    const totalItems = await Booking.find({ user: req.id }).countDocuments();
+    const totalPages = Math.ceil(totalItems / limit);
+    const page = parseInt(req.query.page) || 1;
+    const skip = (page - 1) * limit;
+
     const bookings = await Booking.find({ user: req.id })
       .populate("bike")
-      .populate("user");
-console.log(bookings,"hhhhhhhh");
-const inputDate = new Date();
-    const day = inputDate.getUTCDate();
-    const month = inputDate.getUTCMonth() + 1; 
-    const year = inputDate.getUTCFullYear();
+      .populate("user")
+      .skip(skip)
+      .limit(limit);
 
-    const formattedDate = `${day}/${month}/${year}`;
-    console.log(formattedDate,"formattedDateformattedDate");
-    var currentDateAndTime = new Date();
-
-    currentDateAndTime.setHours(12);    
-    currentDateAndTime.setMinutes(30);   
-    currentDateAndTime.setSeconds(0);   
-  
-   
-    var formattedTime = currentDateAndTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
-    console.log(formattedTime,"currentDateAndTimecurrentDateAndTimecurrentDateAndTime");
-
-    const pickUpDate=bookings.pickUpDate
-    const PickupTime=bookings.PickupTime
-    const dropDate=bookings.dropDate
-    const dropTime=bookings.dropTime
-    console.log(pickUpDate,PickupTime,dropDate,dropTime)
-    
-    if(formattedDate<=pickUpDate&&formattedTime<PickupTime&&formattedDate<=dropDate&&formattedTime<dropTime){
-      await Booking.findByIdAndUpdate(id,{$set:{
-        status:"Running"
-      }}, { new: true });
-    }else if(formattedDate>=dropDate&&formattedTime>dropTime){
-      await Booking.findByIdAndUpdate(id,{$set:{
-        status:"Running Completed"
-      }}, { new: true });
-    }else{
-      await Booking.findByIdAndUpdate(id,{$set:{
-        status:"Booked"
-      }}, { new: true });
-    }
     if (bookings) {
-      res.status(200).send({ success: true, bookings });
+      res.status(200).send({ success: true, bookings, page, totalPages });
     }
   } catch (error) {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
 const CancelBooking = async (req, res) => {
   try {
     const id = req.query.id;
-    const inputDate = new Date();
-    const day = inputDate.getUTCDate();
-    const month = inputDate.getUTCMonth() + 1; 
-    const year = inputDate.getUTCFullYear();
-
-    const formattedDate = `${day}/${month}/${year}`;
-    var currentDateAndTime = new Date();
-
-    currentDateAndTime.setHours(12);    
-    currentDateAndTime.setMinutes(30);   
-    currentDateAndTime.setSeconds(0);   
-    
-   
-    var formattedTime = currentDateAndTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
 
     const bookingData = await Booking.findById(id).populate("user");
-     const pickUpDate=bookingData.pickUpDate
-     const PickupTime=bookingData.PickupTime
-    if (!bookingData) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Booking not found" });
-    }
- if(formattedDate<=pickUpDate&&formattedTime<PickupTime ){
-
- 
     let wallet = bookingData.user.wallet;
     const grandTotal = bookingData.grandTotal;
     const sum = wallet + grandTotal;
 
-    const updatedUser = await User.findByIdAndUpdate(
-      bookingData.user._id,
-      { $set: { wallet: sum } },
-      { new: true }
-    );
+    if (bookingData.status == "booked") {
+      const updatedUser = await User.findByIdAndUpdate(
+        bookingData.user._id,
+        { $set: { wallet: sum } },
+        { new: true }
+      );
 
-    console.log(updatedUser.wallet, "wallet");
-    if (updatedUser) {
-      await Booking.findByIdAndUpdate(id,{$set:{
-        statuschange:false,status:"Canceld"
-      }}, { new: true });
+      if (updatedUser) {
+        await Booking.findByIdAndUpdate(
+          id,
+          {
+            $set: {
+              statuschange: false,
+              status: "Canceld",
+            },
+          },
+          { new: true }
+        );
+      }
+      res.status(200).json({ success: true, message: "cancel" });
+    } else if (bookingData.status == "Running") {
+      res
+        .status(201)
+        .json({ success: false, Running: "your vechicle is running" });
+    } else if (bookingData.status == "Completed") {
+      res
+        .status(201)
+        .json({ success: false, completed: "your vechicle is running" });
     }
-    res.status(200).json({ success: true, grandTotal });
-  }else{
-    res.status(201).json({success:false,messages:"your vechicle is running"})
-  }
-   
-  
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+const findcoupons = async (req, res) => {
+  try {
+    const findcoupon = await Coupon.find({status:true});
+    if (findcoupon) {
+      res.status(200).json({ success: true, message: "data find", findcoupon });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+const Applycoupon = async (req, res) => {
+  try {
+    const couponcode = req.body.data.code;
+
+    const user = req.id;
+    const toatalAmout = req.body.data.amonut;
+    if (couponcode) {
+      const findcoupon = await Coupon.findOne({ couponCode: couponcode });
+      if (findcoupon) {
+        const is_User_used = findcoupon.user.find((value) => {
+          return value.id == user;
+        });
+
+        if (is_User_used) {
+          res
+            .status(201)
+            .json({ success: false, message: "coupon is already used" });
+        } else {
+          if (findcoupon.maximumpurchase <= toatalAmout) {
+            const currentDate = new Date();
+            const formattedCurrentDate =
+              currentDate.toLocaleDateString("en-GB");
+
+            const formattedCouponExpiryDate = new Date(
+              findcoupon.experirydate
+            ).toLocaleDateString("en-GB");
+
+            if (formattedCurrentDate < formattedCouponExpiryDate) {
+              const data_1 = {
+                id: user,
+              };
+              await Coupon.findOneAndUpdate(
+                { _id: findcoupon._id },
+                {
+                  $push: { user: data_1 },
+                }
+              );
+
+              res
+                .status(201)
+                .json({
+                  success: true,
+                  message: "coupon is applaid successfully",
+                  amount: findcoupon.discountamount,
+                });
+            } else {
+              res
+                .status(201)
+                .json({ success: false, message: "coupon is expired" });
+            }
+          } else {
+            res
+              .status(201)
+              .json({
+                success: false,
+                message: "coupon cannot applay on this purchase",
+              });
+          }
+        }
+      } else {
+        res
+          .status(201)
+          .json({ success: false, message: "coupon code is invalid" });
+      }
+    } else {
+      res
+        .status(201)
+        .json({ success: false, message: "please enter anything" });
+    }
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+const wallethistory = async (req, res) => {
+  try {
+    const id = req.id;
+    const limit = 5;
+
+    const totalItems = await Booking.find({
+      $and: [
+        { user: id },
+        { status: "Completed" },
+        { paymentMethod: "wallet" },
+      ],
+    }).countDocuments();
+
+    const totalPages = Math.ceil(totalItems / limit);
+    const page = parseInt(req.query.page) || 1;
+    const skip = (page - 1) * limit;
+
+    const booking = await Booking.find({
+      $and: [
+        { user: id },
+        { status: "Completed" },
+        { paymentMethod: "wallet" },
+      ],
+    })
+      .populate("user")
+      .populate("bike")
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({ success: true, history: booking, page, totalPages });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: "Internal Server Error" });
+  }
+};
+
+const bookingPartners = async (req, res) => {
+  try {
+    const id = req.id;
+    const bookings = await Booking.find({ user: req.id }).populate("partner");
+
+    // Extract unique partners
+    const uniquePartners = Array.from(
+      new Set(bookings.map((booking) => booking.partner))
+    );
+
+    res.status(200).json({ success: true, message: "find it", uniquePartners });
+  } catch (error) {
+    res.status(500).json({ success: false, error: "Internal Server Error" });
+  }
+};
+
+const saveChat = async (req, res) => {
+  console.log("working chattttttttttttttttttttttttttttttttttttt")
+
+  try {
+    const { chat, partnerId } = req.body.data;
+    const partnerIds = new mongoose.Types.ObjectId(partnerId);
+
+    const findChat = await ChatModel.find({
+      $and: [{ partnerId: partnerId }, { userId: req.id }],
+    })
+      .populate("userId")
+      .populate("partnerId");
+
+    if (findChat) {
+      await ChatModel.findOneAndUpdate(
+        { partnerId: partnerId, userId: req.id },
+        { $push: { chat: chat } },
+        { new: true, upsert: true }
+      );
+      res.json({ success: true });
+    } else {
+      res.json({ success: false });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, error: "Internal Server Error" });
+  }
+};
+
+const getChat = async (req, res) => {
+  try {
+    const partnerId = new mongoose.Types.ObjectId(req.query.id);
+    const userId= new mongoose.Types.ObjectId(req.id);
+    console.log(partnerId,userId,req.query.id);
+
+    const findChat = await ChatModel.find({
+      $and: [{ partnerId: partnerId }, { userId: userId }],
+    })
+    .populate("userId")
+    .populate("partnerId");
+    
+    console.log(findChat, 'this get chat');
+    
+    if (findChat) {
+      res.status(200).send({
+        success: true,
+        findChat,
+      });
+    } else {
+      res.status(404).send({
+        success: false,
+        message: "Chat not found",
+      });
+    }
+  } catch (error) {
+    console.log(error);
   }
 };
 
@@ -748,10 +1022,17 @@ module.exports = {
   CheckifUser,
   ProofFrontid,
   ProofBackid,
-  GetBike,
+  BikeSelect,
   FindbikeDateBased,
-  // FinalBooking,
   Payments,
   BookingView,
   CancelBooking,
+  findcoupons,
+  Applycoupon,
+  wallethistory,
+  bookingPartners,
+  saveChat,
+  getChat,
+  findbikes,
+  AlredyBooked
 };

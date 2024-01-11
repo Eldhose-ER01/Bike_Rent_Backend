@@ -20,7 +20,7 @@ partnerRoute.post('/bookingchange',middleware.partnerAuth,middleware.partnerbloc
 partnerRoute.post('/cancelbooking',middleware.partnerAuth,middleware.partnerblock,PartnerController.BookingCancel)
 partnerRoute.get('/chartbooking',middleware.partnerAuth,middleware.partnerblock,PartnerController.ChartView)
 partnerRoute.get('/chatuser',middleware.partnerAuth,middleware.partnerblock,PartnerController.uniquechatuser)
-partnerRoute.get('/getChat',middleware.partnerAuth,middleware.partnerblock,PartnerController.getChat)
+partnerRoute.get('/getChat',middleware.partnerAuth,PartnerController.getChat)
 partnerRoute.post('/saveChat',middleware.partnerAuth,PartnerController.saveChat)
 
 

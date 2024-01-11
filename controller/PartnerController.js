@@ -611,17 +611,20 @@ const saveChat = async (req, res) => {
           { userId:userIds  }
         ]
       }).populate('userId').populate('partnerId');
-
-      if (findChat) {
+      if (findChat.length > 0) {
+        // Chat already exists, update it
         await ChatModel.findOneAndUpdate(
-          { partnerId:req.id, userId:userIds },
+          { partnerId: req.id, userId: userIds },
           { $push: { chat: chat } },
           { new: true, upsert: true }
-        )
-          res.json({ success: true })
+        ).then(()=>{
+        res.status(200).json({ success: true });
+        })
       } else {
-          res.json({ success: false })
+        // Chat doesn't exist, handle accordingly
+        res.json({ success: false });
       }
+      
   } catch (error) {
       console.log(error);
       res.status(500).json({ success: false, error: "Internal Server Error" });
@@ -631,15 +634,15 @@ const saveChat = async (req, res) => {
 const getChat = async (req, res) => {
   try {
       const id = req.query.id;
-      const userId = new mongoose.Types.ObjectId(req.query.id)
-
-
+      const userId = new mongoose.Types.ObjectId(id)
+      const partnerId = new mongoose.Types.ObjectId(req.id);
       const findChat = await ChatModel.find({
         $and: [
-          { partnerId: req.id },
-          { userId:userId  }
+          { partnerId: partnerId },
+          { userId: userId }
         ]
       }).populate('userId').populate('partnerId');
+      console.log('After finding chat:', findChat);
       if (findChat) {
         console.log('this is my finded chat ')
         res.status(200).send({

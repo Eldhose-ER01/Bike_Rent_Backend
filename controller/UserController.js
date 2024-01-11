@@ -10,6 +10,7 @@ const Partner = require("../model/Partner");
 const Coupon = require("../model/Coupon");
 const Stripe = require("stripe");
 const mongoose = require("mongoose");
+const { response } = require("../routes/User");
 
 const stripe = Stripe(
   "sk_test_51ONBCPSCuu8kH4kkSPnawvp6PPYOmsowDJhrbnOHJYinxC8es0Hm9aM1rZ7PuFTLFp7ZfXnKTyOPpVmoiBdugt7p00yNAlu1PM"
@@ -949,28 +950,31 @@ const bookingPartners = async (req, res) => {
 };
 
 const saveChat = async (req, res) => {
-  console.log("working chattttttttttttttttttttttttttttttttttttt")
 
   try {
     const { chat, partnerId } = req.body.data;
     const partnerIds = new mongoose.Types.ObjectId(partnerId);
-
     const findChat = await ChatModel.find({
-      $and: [{ partnerId: partnerId }, { userId: req.id }],
+      $and: [{ partnerId: partnerIds }, { userId: req.id }],
     })
       .populate("userId")
       .populate("partnerId");
+console.log(findChat,'jjjjjjjjjjjjjjjjjjj')
+if (findChat.length > 0) {
+  // Chat already exists, update it
+  await ChatModel.findOneAndUpdate(
+    { partnerId: partnerId, userId: req.id },
+    { $push: { chat: chat } },
+    { new: true, upsert: true }
+  ).then(()=>{
+    res.status(200).json({ success: true });
+  })
+ 
+} else {
+  // Chat doesn't exist, handle accordingly
+  res.json({ success: false });
+}
 
-    if (findChat) {
-      await ChatModel.findOneAndUpdate(
-        { partnerId: partnerId, userId: req.id },
-        { $push: { chat: chat } },
-        { new: true, upsert: true }
-      );
-      res.json({ success: true });
-    } else {
-      res.json({ success: false });
-    }
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, error: "Internal Server Error" });
@@ -988,15 +992,16 @@ const getChat = async (req, res) => {
     })
     .populate("userId")
     .populate("partnerId");
+   
     
-    console.log(findChat, 'this get chat');
-    
-    if (findChat) {
+    if (findChat.length > 0) {
+      // Chat found, send it in the response
       res.status(200).send({
         success: true,
         findChat,
       });
     } else {
+      // Chat not found, handle accordingly
       res.status(404).send({
         success: false,
         message: "Chat not found",

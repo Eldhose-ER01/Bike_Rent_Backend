@@ -29,7 +29,7 @@ userRoute.post('/Applycoupon',middleware.userAuth,userController.Applycoupon)
 
 userRoute.get('/wallethistory',middleware.userAuth,middleware.userblock,userController.wallethistory)
 userRoute.get('/bookingpartner',middleware.userAuth,middleware.userblock,userController.bookingPartners)
-userRoute.get('/getChat',middleware.userAuth,middleware.userblock,userController.getChat)
+userRoute.get('/getChat',middleware.userAuth,userController.getChat)
 userRoute.post('/saveChat',middleware.userAuth,userController.saveChat)
 
 userRoute.post('/alredybooked',middleware.userAuth,userController.AlredyBooked)

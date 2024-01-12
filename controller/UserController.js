@@ -10,7 +10,7 @@ const Partner = require("../model/Partner");
 const Coupon = require("../model/Coupon");
 const Stripe = require("stripe");
 const mongoose = require("mongoose");
-const { response } = require("../routes/User");
+// const { response } = require("../routes/User");
 
 const stripe = Stripe(
   "sk_test_51ONBCPSCuu8kH4kkSPnawvp6PPYOmsowDJhrbnOHJYinxC8es0Hm9aM1rZ7PuFTLFp7ZfXnKTyOPpVmoiBdugt7p00yNAlu1PM"

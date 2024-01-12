@@ -639,8 +639,8 @@ const Payments = async (req, res) => {
             },
           ],
           mode: "payment",
-          success_url: "https://bike-rent-frontend.vercel.app/successbooking",
-          cancel_url: "https://bike-rent-frontend.vercel.app/bikebooking",
+          success_url: "https://bikerunrider.vercel.app/successbooking",
+          cancel_url: "https://bikerunrider.vercel.app/bikebooking",
         });
       } else if (Paymentmethod == "wallet") {
         const userdata = await User.findById(users);

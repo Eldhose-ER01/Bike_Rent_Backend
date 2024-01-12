@@ -19,7 +19,8 @@ userRoute.post('/imageupload', middleware.userAuth,userController.ImageUpload);
 userRoute.post('/licenseFrontSide',middleware.userAuth,userController.ProofFrontid)
 userRoute.post('/licenseBackSide',middleware.userAuth,userController.ProofBackid)
 userRoute.get('/getbike',middleware.userAuth,middleware.userblock,userController.BikeSelect)
-userRoute.get('/findbikes',middleware.userAuth,middleware.userblock,userController.findbikes)
+userRoute.get('/findbikes',userController.findbikes)
+
 userRoute.post('/datesfind',middleware.userAuth,middleware.userblock,userController.FindbikeDateBased)
 userRoute.post('/create-checkout-session',middleware.userAuth,userController.Payments)
 userRoute.get('/bookingview',middleware.userAuth,middleware.userblock,userController.BookingView)

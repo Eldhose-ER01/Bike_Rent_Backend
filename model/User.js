@@ -1,63 +1,60 @@
-const mongoose=require('mongoose')
-const userSchema=new mongoose.Schema({
+const mongoose = require('mongoose');
 
-    _id: mongoose.Schema.Types.ObjectId,
-    
-    fname:{
-        type:String,
-        required:true
+const userSchema = new mongoose.Schema({
+    fname: {
+        type: String,
+        required: true
     },
-    lname:{
-        type:String,
-        required:true
+    lname: {
+        type: String,
+        required: true
     },
-    email:{
-        type:String,
-        required:true
-
+    email: {
+        type: String,
+        required: true
     },
-    phone:{
-        type:Number
+    phone: {
+        type: Number
     },
-    password:{
-        type:String,
-        
+    password: {
+        type: String
     },
-    image:{
-        type:String
+    image: {
+        type: String
     },
-    status:{
-       type:Boolean,
-       default:true
+    status: {
+        type: Boolean,
+        default: true
     },
-    licenseFrontSide:{
-        type:String,
+    licenseFrontSide: {
+        type: String
     },
-    licenseBackSide:{
-        type:String,
-        
+    licenseBackSide: {
+        type: String
     },
-    wallet:{
-        type:Number,
-        default:0
+    wallet: {
+        type: Number,
+        default: 0
     },
-    wallethistory:{
-        type:[{
-            tdate:{type:Date},
-            amount:{type:Number},
-            tType:{type:String}
+    wallethistory: {
+        type: [{
+            tdate: { type: Date },
+            amount: { type: Number },
+            tType: { type: String }
         }]
     },
-    state:{
-       type:String
+    state: {
+        type: String
     },
-    district:{
-        type:String
+    district: {
+        type: String
     },
-    lincenno:{
-        type:String
-
+    lincenno: {
+        type: String
     }
+}, {
+    // Add this option to enable automatic generation of _id
+    _id: true
+});
 
-})
-module.exports=mongoose.model("user",userSchema)
+module.exports = mongoose.model("user", userSchema);

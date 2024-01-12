@@ -181,7 +181,9 @@ const Login = async (req, res) => {
 
 //User Signup in Google
 const GoogleData = async (req, res) => {
+  console.log("ggggggggggggggggggggg");
   try {
+    console.log(req.body,"bodyyyyyyyyyyyyyyyyyyyy");
     const { firstName, lastName, email, photoUrl } =
       req.body.data._tokenResponse;
 
@@ -189,6 +191,7 @@ const GoogleData = async (req, res) => {
 
     if (!userdata) {
       const savedata = new User({
+       
         fname: firstName,
         lname: lastName,
         email: email,
@@ -472,6 +475,7 @@ const findbikes = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
+
 
 const ProofBackid = async (req, res) => {
   try {
@@ -1039,5 +1043,6 @@ module.exports = {
   saveChat,
   getChat,
   findbikes,
-  AlredyBooked
+  AlredyBooked,
+  
 };

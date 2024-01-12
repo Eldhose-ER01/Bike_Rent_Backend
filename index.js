@@ -27,7 +27,7 @@ const server = http.createServer(app); // Create an HTTP server
 
 const io = new Server(server, {
     cors: {
-        origin: 'http://localhost:3000',
+        origin: 'https://bike-rent-frontend.vercel.app/',
         methods: ['GET', 'POST', 'PATCH', 'PUT'],
         credentials: true,
     },

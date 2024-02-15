@@ -103,7 +103,7 @@ const partnerblock = async (req, res, next) => {
 
 const userblock = async (req, res, next) => {
   const userdata= await User.findById(req.id);
-  console.log(userdata,"userdatauserdata");
+
   if (userdata && userdata.status === true) {
     next();
   }else {

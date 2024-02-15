@@ -1,14 +1,14 @@
-const mongoose=require('mongoose')
+const mongoose = require("mongoose");
 const partner = require("../model/Partner");
 const User = require("../model/User");
 const addbike = require("../model/BikeAdd");
-const ChatModel=require('../model/Conversations')
+const ChatModel = require("../model/Conversations");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Booking = require("../model/Booking");
 const { ObjectId } = require("mongodb");
 
-// PartnerSignup
+/*--------------------PartnerSignup----------------------*/
 
 const PartnerSignup = async (req, res) => {
   try {
@@ -73,7 +73,7 @@ const PartnerSignup = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
-// PartnerLogin
+/*-------------------------------------- PartnerLogin-----------------------*/
 
 const PartnerLogin = async (req, res) => {
   try {
@@ -135,7 +135,7 @@ const PartnerLogin = async (req, res) => {
     });
   }
 };
-// Aadhaar
+/*-------------------------Aadhaar---------------------*/
 
 const Aadhaar = async (req, res) => {
   try {
@@ -154,7 +154,7 @@ const Aadhaar = async (req, res) => {
   }
 };
 
-// PartnerProfile
+/*----------------------- PartnerProfile-----------------*/
 
 const PartnerProfile = async (req, res) => {
   try {
@@ -170,7 +170,7 @@ const PartnerProfile = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
-// CheckifPartner
+/*------------------- CheckifPartner-----------------------*/
 
 const CheckifPartner = async (req, res) => {
   try {
@@ -210,7 +210,7 @@ const CheckifPartner = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
-// PartnerProfileimg
+/*---------------- PartnerProfileimg-------------------*/
 const PartnerProfileimg = async (req, res) => {
   try {
     const image = req.body.id;
@@ -227,7 +227,7 @@ const PartnerProfileimg = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
-// EditProfile
+/*--------------- EditProfile from Partner ----------------*/
 const EditProfile = async (req, res) => {
   try {
     const {
@@ -272,7 +272,7 @@ const EditProfile = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
-// AddBikes
+/*------------------------AddBikes from Partner---------------------*/
 const AddBikes = async (req, res) => {
   try {
     const {
@@ -317,23 +317,33 @@ const AddBikes = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
-// FindBikes
+/*------------------FindBikes form partner--------------------*/
 const FindBikes = async (req, res) => {
   try {
     const id = req.id;
     const page = parseInt(req.query.page) || 1;
     const limit = 3;
-    const totalItems = await addbike.find({ isVerifed: "verified", ownerid: id }).countDocuments();
+    const totalItems = await addbike
+      .find({ isVerifed: "verified", ownerid: id })
+      .countDocuments();
     const totalPages = Math.ceil(totalItems / limit);
-   
+
     const skip = (page - 1) * limit;
-    const bikelist = await addbike.find({ isVerifed: "verified", ownerid: id }).skip(skip)
-    .limit(limit);
+    const bikelist = await addbike
+      .find({ isVerifed: "verified", ownerid: id })
+      .skip(skip)
+      .limit(limit);
 
     if (bikelist) {
       res
         .status(200)
-        .json({ success: true, message: "bikes are find", bikelist,totalPages,page });
+        .json({
+          success: true,
+          message: "bikes are find",
+          bikelist,
+          totalPages,
+          page,
+        });
     } else {
       res.status(201).json({ success: false, message: "bikes not find" });
     }
@@ -341,7 +351,7 @@ const FindBikes = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
-// EditBikes
+/*------------------EditBikes----------------------*/
 const EditBikes = async (req, res) => {
   try {
     const { Bikename, brand, RentPerDay, id, image } = req.body.data;
@@ -367,7 +377,7 @@ const EditBikes = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
-// DeleteBike
+/*---------------------------DeleteBike------------------------*/
 const DeleteBike = async (req, res) => {
   try {
     const id = req.query.id;
@@ -381,12 +391,13 @@ const DeleteBike = async (req, res) => {
   }
 };
 
+/*---------------------Bookings Views From partner side---------------------*/
 const Bookings = async (req, res) => {
   try {
     const id = req.id;
     const objectId = new ObjectId(id);
     const limit = 4;
- 
+
     // Count total documents without skipping and limiting
     const totalItems = await Booking.countDocuments({ partner: objectId });
 
@@ -424,6 +435,7 @@ const Bookings = async (req, res) => {
   }
 };
 
+/*----------------BookingStatusChange From Partner--------------------*/
 const BookingStatusChange = async (req, res) => {
   try {
     const id = req.query.id;
@@ -474,7 +486,7 @@ const BookingStatusChange = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
-
+/*----------------------BookingCancel----------------*/
 const BookingCancel = async (req, res) => {
   try {
     const id = req.query.id;
@@ -516,6 +528,7 @@ const BookingCancel = async (req, res) => {
   }
 };
 
+/*--------------------------------ChartView from partner---------------------*/
 const ChartView = async (req, res) => {
   try {
     const id = req.id;
@@ -530,7 +543,7 @@ const ChartView = async (req, res) => {
 
     const findbooking = await Booking.find({ partner: id })
       .populate("user")
-      .populate('bike')
+      .populate("bike")
       .skip(skip)
       .limit(limit);
 
@@ -539,13 +552,18 @@ const ChartView = async (req, res) => {
     let unique = 0;
 
     if (findbooking) {
-      complete = findbooking.filter((booking) => booking.status === "Completed");
+      complete = findbooking.filter(
+        (booking) => booking.status === "Completed"
+      );
 
       const userss = findbooking.map((value) => value.user.email);
       unique = Array.from(new Set(userss));
 
       if (complete.length > 0) {
-        total = complete.reduce((accumulator, currentValue) => accumulator + currentValue.grandTotal, 0);
+        total = complete.reduce(
+          (accumulator, currentValue) => accumulator + currentValue.grandTotal,
+          0
+        );
       } else {
         console.log("No completed bookings");
       }
@@ -553,7 +571,7 @@ const ChartView = async (req, res) => {
       const bookingID = findbooking.map((booking) => booking._id);
       const threeDigitIDs = bookingID.map((hexString) => {
         const decimalNumber = parseInt(hexString, 16);
-        return ('11' + (decimalNumber % 1000)).slice(-3); // Ensure it's a three-digit number
+        return ("11" + (decimalNumber % 1000)).slice(-3); // Ensure it's a three-digit number
       });
 
       const sortedNumericIDs = threeDigitIDs.map(Number).sort((a, b) => a - b);
@@ -567,7 +585,7 @@ const ChartView = async (req, res) => {
         unique,
         Ids: sortedNumericIDs,
         totalPages,
-        page
+        page,
       });
     } else {
       console.log("No bookings found");
@@ -579,7 +597,7 @@ const ChartView = async (req, res) => {
   }
 };
 
-
+/*--------------------uniquechatuser view from partner---------------------*/
 const uniquechatuser = async (req, res) => {
   try {
     const id = req.id;
@@ -590,75 +608,73 @@ const uniquechatuser = async (req, res) => {
       .populate("user")
       .populate("bike");
 
-    const uniqueUserIds = [...new Set(bookings.map(booking => booking.user._id))];
+    const uniqueUserIds = [
+      ...new Set(bookings.map((booking) => booking.user._id)),
+    ];
 
     const uniqueUsers = await User.find({ _id: { $in: uniqueUserIds } });
-    res.status(200).json({ success: true, booking:uniqueUsers });
+    res.status(200).json({ success: true, booking: uniqueUsers });
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
 
-
+/*-------------------------------saveChat from partner-----------------*/
 const saveChat = async (req, res) => {
   try {
-      const {  chat, userid } = req.body.data;
-      const userIds = new mongoose.Types.ObjectId(userid)
+    const { chat, userid } = req.body.data;
+    const userIds = new mongoose.Types.ObjectId(userid);
 
-      const findChat = await ChatModel.find({
-        $and: [
-          { partnerId: req.id },
-          { userId:userIds  }
-        ]
-      }).populate('userId').populate('partnerId');
-      if (findChat.length > 0) {
-        // Chat already exists, update it
-        await ChatModel.findOneAndUpdate(
-          { partnerId: req.id, userId: userIds },
-          { $push: { chat: chat } },
-          { new: true, upsert: true }
-        ).then(()=>{
+    const findChat = await ChatModel.find({
+      $and: [{ partnerId: req.id }, { userId: userIds }],
+    })
+      .populate("userId")
+      .populate("partnerId");
+    if (findChat.length > 0) {
+      // Chat already exists, update it
+      await ChatModel.findOneAndUpdate(
+        { partnerId: req.id, userId: userIds },
+        { $push: { chat: chat } },
+        { new: true, upsert: true }
+      ).then(() => {
         res.status(200).json({ success: true });
-        })
-      } else {
-        // Chat doesn't exist, handle accordingly
-        res.json({ success: false });
-      }
-      
+      });
+    } else {
+      // Chat doesn't exist, handle accordingly
+      res.json({ success: false });
+    }
   } catch (error) {
-      console.log(error);
-      res.status(500).json({ success: false, error: "Internal Server Error" });
+    console.log(error);
+    res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 };
 
+/*----------------------------Get Chat form Partner--------------------*/
 const getChat = async (req, res) => {
   try {
-      const id = req.query.id;
-      const userId = new mongoose.Types.ObjectId(id)
-      const partnerId = new mongoose.Types.ObjectId(req.id);
-      const findChat = await ChatModel.find({
-        $and: [
-          { partnerId: partnerId },
-          { userId: userId }
-        ]
-      }).populate('userId').populate('partnerId');
-      console.log('After finding chat:', findChat);
-      if (findChat) {
-        console.log('this is my finded chat ')
-        res.status(200).send({
-              success: true,
-              findChat,
-          });
-      } else {
-          res.status(404).send({
-              success: false,
-              message: "Chat not found",
-          });
-      }
+    const id = req.query.id;
+    const userId = new mongoose.Types.ObjectId(id);
+    const partnerId = new mongoose.Types.ObjectId(req.id);
+    const findChat = await ChatModel.find({
+      $and: [{ partnerId: partnerId }, { userId: userId }],
+    })
+      .populate("userId")
+      .populate("partnerId");
+    if (findChat) {
+      res.status(200).send({
+        success: true,
+        findChat,
+      });
+    } else {
+      res.status(404).send({
+        success: false,
+        message: "Chat not found",
+      });
+    }
   } catch (error) {
-      console.log(error);
+    console.log(error);
   }
-}
+};
 module.exports = {
   PartnerSignup,
   PartnerLogin,
@@ -677,6 +693,5 @@ module.exports = {
   ChartView,
   uniquechatuser,
   saveChat,
-  getChat
-  
+  getChat,
 };

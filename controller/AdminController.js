@@ -6,7 +6,7 @@ const Partner = require("../model/Partner");
 const Coupon = require("../model/Coupon");
 const nodemailer = require("nodemailer");
 
-//Adminlogin
+/*-----------------------------Adminlogin-------------------------*/
 const Adminlogin = async (req, res) => {
   try {
     const { email, password } = req.body.data;
@@ -34,7 +34,7 @@ const Adminlogin = async (req, res) => {
   }
 };
 
-//LoadUser
+/*------------------------Total Users---------------------*/
 
 const LoadUser = async (req, res) => {
   try {
@@ -66,7 +66,7 @@ const LoadUser = async (req, res) => {
     console.log(error);
   }
 };
-// Blockuser
+/*------------------------Blockusers---------------------*/
 const Blockuser = async (req, res) => {
   try {
     const id = req.query.id;
@@ -82,11 +82,13 @@ const Blockuser = async (req, res) => {
     console.log(error.message);
   }
 };
-// Partnerdata
+/*-----------------------Partnerdetauls---------------------------*/
 const Partnerdata = async (req, res) => {
   try {
-    // Use aggregation pipeline for efficient pagination
-    const partnerdata = await Partner.find({ isVerifed: "notVerified", Accept: "Accept" });
+    const partnerdata = await Partner.find({
+      isVerifed: "notVerified",
+      Accept: "Accept",
+    });
     res.status(200).json({
       success: true,
       message: "This is your data",
@@ -133,7 +135,7 @@ function sMail(email, message) {
     }
   });
 }
-// Acceptprq
+/*------------------------- Acceptpartner request-----------------*/
 const Acceptprq = async (req, res) => {
   try {
     const id = req.query.id;
@@ -150,24 +152,27 @@ const Acceptprq = async (req, res) => {
   }
 };
 
-// Rejectprq
+/*------------------------Rejectpartnerrequest------------------*/
 const Rejectprq = async (req, res) => {
   try {
     const id = req.query.id;
     const partnerdata = await Partner.findOne({ _id: id });
-    
+
     const message = "failer";
     sMail(partnerdata.email, message);
-    const reject = await Partner.updateOne({ _id: id },{$set:{Accept:"reject"}});
+    const reject = await Partner.updateOne(
+      { _id: id },
+      { $set: { Accept: "reject" } }
+    );
     res.status(200).json({ success: true, message: "is reject" });
   } catch (error) {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
+/*----------------RejectList in partners------------------*/
 const Rejectlist = async (req, res) => {
   try {
-    console.log("jiiiiiii555555");
     const limit = 5;
 
     // Count total documents with the specified condition
@@ -177,19 +182,19 @@ const Rejectlist = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const skip = (page - 1) * limit;
 
-    const data = await Partner.find({ Accept: "reject" }).skip(skip).limit(limit);
+    const data = await Partner.find({ Accept: "reject" })
+      .skip(skip)
+      .limit(limit);
     console.log(data, "datadata");
-    if(data){
-      res.status(200).json({ success:true, datas:data, totalPages, page });
-
+    if (data) {
+      res.status(200).json({ success: true, datas: data, totalPages, page });
     }
   } catch (error) {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
-
-// Update your backend code
+/*--------------------- FindPartners---------------*/
 
 const FindPartners = async (req, res) => {
   try {
@@ -222,9 +227,7 @@ const FindPartners = async (req, res) => {
   }
 };
 
-// ...
-
-// Blockpartner
+/*..................... Blockpartner..................*/
 const Blockpartner = async (req, res) => {
   try {
     const id = req.query.id;
@@ -247,7 +250,7 @@ const Blockpartner = async (req, res) => {
       .send({ message: "Internal server error", success: false });
   }
 };
-// Bikerequest
+/*----------------------Bikerequest---------------------*/
 const Bikerequest = async (req, res) => {
   try {
     const limit = 5;
@@ -285,6 +288,7 @@ const Bikerequest = async (req, res) => {
   }
 };
 
+/*---------------------viewRequest all request in bike---------------*/
 const viewRequest = async (req, res) => {
   try {
     const bikedata = await bike.findOne({ _id: req.query.id });
@@ -302,7 +306,7 @@ const viewRequest = async (req, res) => {
   }
 };
 
-// BikeAccept
+/*------------------------- Bike Request Accept----------------------*/
 const BikeAccept = async (req, res) => {
   try {
     const id = req.query.id;
@@ -346,7 +350,7 @@ function sMailforReject(email, message) {
     }
   });
 }
-// RejectAccept
+/*----------------- Reject Bike Accept------------------------*/
 const RejectAccept = async (req, res) => {
   try {
     const id = req.query.id;
@@ -364,7 +368,7 @@ const RejectAccept = async (req, res) => {
       .send({ message: "Internal server error", success: false });
   }
 };
-// PartnerBikeView
+/*-----------------Admin PartnerBikeView----------------*/
 const PartnerBikeView = async (req, res) => {
   try {
     const id = req.body.data;
@@ -382,7 +386,7 @@ const PartnerBikeView = async (req, res) => {
       .send({ message: "Internal server error", success: false });
   }
 };
-// Blockbike
+/*-------------------------Block Partner bike----------------------*/
 const Blockbike = async (req, res) => {
   try {
     const id = req.query.id;
@@ -400,7 +404,7 @@ const Blockbike = async (req, res) => {
       .send({ message: "Internal Server Error", success: false });
   }
 };
-// CheckifAdmin
+/*-------------------CheckifAdmin-------------------*/
 const CheckifAdmin = (req, res) => {
   try {
     const tokenWithBearer = req.headers["authorization"];
@@ -437,7 +441,7 @@ const CheckifAdmin = (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
-
+/*------------Provide Coupon in Admin----------------*/
 const Coupons = async (req, res) => {
   try {
     const data = req.body.data;
@@ -459,6 +463,7 @@ const Coupons = async (req, res) => {
   }
 };
 
+/*---------------------Take Coupons-----------------*/
 const findcoupon = async (req, res) => {
   try {
     const limit = 5;
@@ -486,6 +491,7 @@ const findcoupon = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
+/*-----------------blockcoupon------------*/
 const blockcoupon = async (req, res) => {
   try {
     const id = req.query.id;
@@ -499,10 +505,11 @@ const blockcoupon = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
+/*-----------------ChartView-----------------*/
 const ChartView = async (req, res) => {
   try {
-    const Totalusers=await User.find()
-    const ToatalPartners=await Partner.find()
+    const Totalusers = await User.find();
+    const ToatalPartners = await Partner.find();
     const Bookingdata = await Booking.find()
       .populate("user")
       .populate("partner");
@@ -532,7 +539,7 @@ const ChartView = async (req, res) => {
         findbooking: Bookingdata,
         total,
         ToatalPartners,
-        Totalusers
+        Totalusers,
       });
     } else {
       res.status(200).json({ success: false, message: "data is not find" });
@@ -542,6 +549,7 @@ const ChartView = async (req, res) => {
   }
 };
 
+/*---------------------------Admin View Sales------------------------*/
 const AdminSales = async (req, res) => {
   try {
     const limit = 7;
@@ -614,5 +622,5 @@ module.exports = {
   blockcoupon,
   ChartView,
   AdminSales,
-  Rejectlist
+  Rejectlist,
 };

@@ -10,14 +10,12 @@ const Partner = require("../model/Partner");
 const Coupon = require("../model/Coupon");
 const Stripe = require("stripe");
 const mongoose = require("mongoose");
-// const { response } = require("../routes/User");
-
 const stripe = Stripe(
   "sk_test_51ONBCPSCuu8kH4kkSPnawvp6PPYOmsowDJhrbnOHJYinxC8es0Hm9aM1rZ7PuFTLFp7ZfXnKTyOPpVmoiBdugt7p00yNAlu1PM"
 );
 
+/*-----------------------Set up OTP creation-----------------------------------------*/
 let globalotp = null;
-//Set up OTP creation,
 function sMail(email, otp) {
   const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
@@ -40,7 +38,7 @@ function sMail(email, otp) {
     }
   });
 }
-//OTP Generate Function
+/*---------------------------OTP Generate Function---------------------------------*/
 function sendotp(email) {
   const otp = otpGenerator.generate(6, {
     digits: true,
@@ -53,7 +51,7 @@ function sendotp(email) {
   globalotp = otp;
 }
 
-//User Signup in client side
+/*----------------------------User Signup in client side-----------------*/
 const Usersignup = async (req, res) => {
   try {
     const { fname, lname, email, phone, password } = req.body.data;
@@ -73,7 +71,7 @@ const Usersignup = async (req, res) => {
   }
 };
 
-//User Click the resend otp
+/*****************User Click the resend otp--------------*/
 const ResendOtp = async (req, res) => {
   try {
     const { email } = req.body.data.userdetails;
@@ -86,7 +84,7 @@ const ResendOtp = async (req, res) => {
   }
 };
 
-//OTP Submit
+/*-------------------OTP Submit----------------*/
 const OtpSubmit = async (req, res) => {
   try {
     const data = req.body;
@@ -127,7 +125,7 @@ const OtpSubmit = async (req, res) => {
   }
 };
 
-//User Login IN client side
+/*---------------User Login IN client side-----------------*/
 const Login = async (req, res) => {
   try {
     const user = req.body.data;
@@ -179,11 +177,9 @@ const Login = async (req, res) => {
   }
 };
 
-//User Signup in Google
+/*---------------------User Signup in Google---------------*/
 const GoogleData = async (req, res) => {
-  console.log("ggggggggggggggggggggg");
   try {
-    console.log(req.body,"bodyyyyyyyyyyyyyyyyyyyy");
     const { firstName, lastName, email, photoUrl } =
       req.body.data._tokenResponse;
 
@@ -191,7 +187,6 @@ const GoogleData = async (req, res) => {
 
     if (!userdata) {
       const savedata = new User({
-       
         fname: firstName,
         lname: lastName,
         email: email,
@@ -227,7 +222,7 @@ const GoogleData = async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 };
-// ForgetPasswordOtp
+/*-------------------------- ForgetPasswordOtp--------------*/
 
 const ForgetPasswordOtp = async (req, res) => {
   try {
@@ -249,7 +244,8 @@ const ForgetPasswordOtp = async (req, res) => {
     });
   }
 };
-// ForgetVeryfyotp
+
+/*---------------------- ForgetVeryfyotp--------------------*/
 
 const ForgetVeryfyotp = async (req, res) => {
   try {
@@ -278,7 +274,7 @@ const ForgetVeryfyotp = async (req, res) => {
     });
   }
 };
-// ResetPassword
+/*---------------------ResetPassword-------------*/
 
 const ResetPassword = async (req, res) => {
   try {
@@ -321,7 +317,7 @@ const ResetPassword = async (req, res) => {
     });
   }
 };
-// CheckifUser
+/*------------------ CheckifUser-----------------------*/
 
 const CheckifUser = async (req, res) => {
   try {
@@ -362,7 +358,7 @@ const CheckifUser = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
-// UserProfile
+/*---------------------- UserProfile-----------------*/
 
 const UserProfile = async (req, res) => {
   try {
@@ -375,7 +371,7 @@ const UserProfile = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
-// GetProfile
+/*--------------------------GetProfile-----------------*/
 const GetProfile = async (req, res) => {
   try {
     const { fname, lname, email, phone, image, state, district, lincenno } =
@@ -411,7 +407,8 @@ const GetProfile = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
-// ImageUpload
+/*--------------------------ImageUpload-----------------*/
+
 const ImageUpload = async (req, res) => {
   try {
     const image = req.body.id;
@@ -432,7 +429,8 @@ const ImageUpload = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
-// ProofFrontid the licence
+/*--------------------------ProofFrontid the licence-----------------*/
+
 const ProofFrontid = async (req, res) => {
   try {
     const frontidimage = req.body.id;
@@ -450,6 +448,7 @@ const ProofFrontid = async (req, res) => {
   }
 };
 
+/*--------------------------findbikes-----------------*/
 const findbikes = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -462,20 +461,19 @@ const findbikes = async (req, res) => {
     const bikesdata = bikes.filter((value) => {
       return value.status == true && value.ownerid.status == true;
     });
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "bike are find",
-        bikesdata,
-        page,
-        totalPages,
-      });
+    res.status(200).json({
+      success: true,
+      message: "bike are find",
+      bikesdata,
+      page,
+      totalPages,
+    });
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
 
+/*--------------------------ProofBackid-----------------*/
 
 const ProofBackid = async (req, res) => {
   try {
@@ -494,7 +492,7 @@ const ProofBackid = async (req, res) => {
   }
 };
 
-// GetBike from user side
+/*-------------------GetBike from user side---------------*/
 
 const BikeSelect = async (req, res) => {
   try {
@@ -519,6 +517,8 @@ const BikeSelect = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
+
+/*--------------------------FindbikeDateBased-----------------*/
 
 const FindbikeDateBased = async (req, res) => {
   try {
@@ -558,18 +558,12 @@ const FindbikeDateBased = async (req, res) => {
   }
 };
 
-
-
-
+/*--------------------------AlredyBooked-----------------*/
 
 const AlredyBooked = async (req, res) => {
   try {
-    // const id = req.id;
-    // const user = await User.findById(id);
-    // const wallet = user.wallet;
     const { pickupdate, dropdate, city } = req.body.data[0];
     const { BikeId } = req.body.data[0].BikeId._id;
-console.log(BikeId,dropdate,pickupdate,"BikeIdBikeIdBikeIdBikeId");
     const everyBike = await bike.find().populate("ownerid");
 
     const filtercity = everyBike.filter((value) => value.ownerid.city == city);
@@ -589,24 +583,22 @@ console.log(BikeId,dropdate,pickupdate,"BikeIdBikeIdBikeIdBikeId");
 
         return !isOverlap;
       }
-    })
-
-    // const alredybook=findBike.find((value)=>value._id==)
-
+    });
     res.status(200).json({
       message: "bike filtered",
       success: true,
       bikedata: findBike,
-  
     });
   } catch (error) {
     res.status(500).json({ message: "Internal Server Error", success: false });
   }
 };
 
+/*--------------------------Payments-----------------*/
+
 const Payments = async (req, res) => {
   try {
-    console.log(req.body,"")
+    console.log(req.body, "");
     const users = req.id;
     const userdata = await User.findOne({ _id: users });
     if (userdata.licenseFrontSide && userdata.licenseBackSide) {
@@ -730,13 +722,11 @@ const Payments = async (req, res) => {
           .status(200)
           .json({ url: session.url, success: true, message: "Data stored" });
       } else if (Paymentmethod == "wallet") {
-        res
-          .status(200)
-          .json({
-            success: true,
-            message: "Booking Started",
-            wallet: "successbooking",
-          });
+        res.status(200).json({
+          success: true,
+          message: "Booking Started",
+          wallet: "successbooking",
+        });
       } else {
         res
           .status(400)
@@ -749,6 +739,7 @@ const Payments = async (req, res) => {
   }
 };
 
+/*-------------------------------BookingView----------------*/
 const BookingView = async (req, res) => {
   try {
     const limit = 5;
@@ -771,6 +762,7 @@ const BookingView = async (req, res) => {
   }
 };
 
+/*---------------------CancelBooking---------------------*/
 const CancelBooking = async (req, res) => {
   try {
     const id = req.query.id;
@@ -815,9 +807,10 @@ const CancelBooking = async (req, res) => {
   }
 };
 
+/*-----------------findcoupons-----------------*/
 const findcoupons = async (req, res) => {
   try {
-    const findcoupon = await Coupon.find({status:true});
+    const findcoupon = await Coupon.find({ status: true });
     if (findcoupon) {
       res.status(200).json({ success: true, message: "data find", findcoupon });
     }
@@ -826,6 +819,7 @@ const findcoupons = async (req, res) => {
   }
 };
 
+/*-----------------Applycoupon---------------------*/
 const Applycoupon = async (req, res) => {
   try {
     const couponcode = req.body.data.code;
@@ -864,25 +858,21 @@ const Applycoupon = async (req, res) => {
                 }
               );
 
-              res
-                .status(201)
-                .json({
-                  success: true,
-                  message: "coupon is applaid successfully",
-                  amount: findcoupon.discountamount,
-                });
+              res.status(201).json({
+                success: true,
+                message: "coupon is applaid successfully",
+                amount: findcoupon.discountamount,
+              });
             } else {
               res
                 .status(201)
                 .json({ success: false, message: "coupon is expired" });
             }
           } else {
-            res
-              .status(201)
-              .json({
-                success: false,
-                message: "coupon cannot applay on this purchase",
-              });
+            res.status(201).json({
+              success: false,
+              message: "coupon cannot applay on this purchase",
+            });
           }
         }
       } else {
@@ -900,6 +890,8 @@ const Applycoupon = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+/*-------------------Total wallet History--------------------*/
 
 const wallethistory = async (req, res) => {
   try {
@@ -937,12 +929,13 @@ const wallethistory = async (req, res) => {
   }
 };
 
+/*-----------------------------Total bookingPartners----------------------*/
+
 const bookingPartners = async (req, res) => {
   try {
     const id = req.id;
     const bookings = await Booking.find({ user: req.id }).populate("partner");
 
-    // Extract unique partners
     const uniquePartners = Array.from(
       new Set(bookings.map((booking) => booking.partner))
     );
@@ -953,8 +946,8 @@ const bookingPartners = async (req, res) => {
   }
 };
 
+/*-----------------------Save Chat from user----------------*/
 const saveChat = async (req, res) => {
-
   try {
     const { chat, partnerId } = req.body.data;
     const partnerIds = new mongoose.Types.ObjectId(partnerId);
@@ -963,41 +956,35 @@ const saveChat = async (req, res) => {
     })
       .populate("userId")
       .populate("partnerId");
-console.log(findChat,'jjjjjjjjjjjjjjjjjjj')
-if (findChat.length > 0) {
-  // Chat already exists, update it
-  await ChatModel.findOneAndUpdate(
-    { partnerId: partnerId, userId: req.id },
-    { $push: { chat: chat } },
-    { new: true, upsert: true }
-  ).then(()=>{
-    res.status(200).json({ success: true });
-  })
- 
-} else {
-  // Chat doesn't exist, handle accordingly
-  res.json({ success: false });
-}
-
+    if (findChat.length > 0) {
+      await ChatModel.findOneAndUpdate(
+        { partnerId: partnerId, userId: req.id },
+        { $push: { chat: chat } },
+        { new: true, upsert: true }
+      ).then(() => {
+        res.status(200).json({ success: true });
+      });
+    } else {
+      res.json({ success: false });
+    }
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 };
 
+/*-----------------------Take Chat From User-----------*/
 const getChat = async (req, res) => {
   try {
     const partnerId = new mongoose.Types.ObjectId(req.query.id);
-    const userId= new mongoose.Types.ObjectId(req.id);
-    console.log(partnerId,userId,req.query.id);
+    const userId = new mongoose.Types.ObjectId(req.id);
 
     const findChat = await ChatModel.find({
       $and: [{ partnerId: partnerId }, { userId: userId }],
     })
-    .populate("userId")
-    .populate("partnerId");
-   
-    
+      .populate("userId")
+      .populate("partnerId");
+
     if (findChat.length > 0) {
       // Chat found, send it in the response
       res.status(200).send({
@@ -1044,5 +1031,4 @@ module.exports = {
   getChat,
   findbikes,
   AlredyBooked,
-  
 };

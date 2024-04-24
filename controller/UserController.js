@@ -30,7 +30,7 @@ function sMail(email, otp) {
     from: process.env.USER,
     to: email,
     subject: "Your OTP",
-    text: `This is your OTP${otp}`,
+    text: `This is your OTP:${otp}`,
   };
   transporter.sendMail(mailOptions, function (error, info) {
     if (error) {
@@ -54,12 +54,12 @@ function sendotp(email) {
 /*----------------------------User Signup in client side-----------------*/
 const Usersignup = async (req, res) => {
   try {
-    const { fname, lname, email, phone, password } = req.body.data;
+    const { email} = req.body.data;
 
     const userexist = await User.findOne({ email: email });
     if (!userexist) {
       sendotp(email);
-      res.status(200).json({ success: true, message: "mIl success sent" });
+      res.status(200).json({ success: true, message: "email success sent" });
     } else {
       return res
         .status(201)

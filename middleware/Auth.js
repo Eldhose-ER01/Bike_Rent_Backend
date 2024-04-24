@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const userAuth = async (req, res, next) => {
   try {
     const tokenWithBearer = req.headers["authorization"];
+
     if (!tokenWithBearer || !tokenWithBearer.startsWith("Bearer ")) {
       console.error("Authorization header missing or invalid");
       return res
@@ -17,8 +18,9 @@ const userAuth = async (req, res, next) => {
 
     const token = tokenWithBearer.split(" ")[1];
     // const tokenString = String(token);
-
+console.log(token,"tokentokentoken..................................................");
     const cleanedToken = token.replace(/"/g, "");
+    console.log(cleanedToken,"cleanedToken");
     jwt.verify(cleanedToken, process.env.JWT_SECRET_KEY, (err, decoded) => {
       if (err) {
       } else if (decoded.role === "user") {
